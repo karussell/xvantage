@@ -1,0 +1,5 @@
+ * test reading arrays
+ * wrting collection/list/set/maps
+ * references to others
+ * even try heavy self circular references like so
+   class Task { Task parentTask; List<Task> subTasks;}
