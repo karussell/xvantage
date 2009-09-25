@@ -1,0 +1,13 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<path>
+    <complexObject>
+        <name>Tester</name>
+        <yourFloat>3.456458</yourFloat>
+        <id>5</id>
+    </complexObject>
+    <complexObject>
+        <name>Tester2</name>
+        <yourFloat>3.234456458</yourFloat>
+        <id>6</id>
+    </complexObject>
+</path>

@@ -1,0 +1,27 @@
+
+<obj>
+    <name>Tester</name>
+    <id>5</id>
+    <stringSet valueClass="String">
+        <value>test</value>
+        <value>test2</value>
+        <value>test3</value>
+    </stringSet>
+    <stringMap keyClass="Integer" valueClass="String">
+        <entry>
+            <key>1</key>
+            <value>test1</value>
+        </entry>
+        <entry>
+            <key>2</key>
+            <value>test2</value>
+        </entry>
+        <entry>
+            <key>3</key>
+            <value>test3</value>
+        </entry>
+    </stringMap>
+    <stringArray valueClass="String">
+        <value>str1</value>
+    </stringArray>
+</obj>

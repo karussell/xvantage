@@ -1,0 +1,9 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<path>
+    <simpleObj>
+        <name>Tester1</name>
+    </simpleObj>
+    <simpleObj>
+        <name>Tester2</name>
+    </simpleObj>
+</path>
