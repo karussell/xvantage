@@ -41,6 +41,7 @@ public class Person {
     }
 
     public void setMainTask(Task mainTask) {
+        
         this.mainTask = mainTask;
     }
 
