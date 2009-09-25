@@ -39,6 +39,7 @@ public class ObjectStringTransformer {
     private Class<? extends List> defaultListImpl = ArrayList.class;
 
     public ObjectStringTransformer() {
+        
     }
 
     public Class<? extends List> getDefaultListImpl() {
