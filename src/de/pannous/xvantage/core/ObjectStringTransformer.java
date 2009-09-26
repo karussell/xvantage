@@ -1,5 +1,6 @@
 package de.pannous.xvantage.core;
 
+import de.pannous.xvantage.core.ObjectStringTransformer.Parsing;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -39,7 +40,6 @@ public class ObjectStringTransformer {
     private Class<? extends List> defaultListImpl = ArrayList.class;
 
     public ObjectStringTransformer() {
-        
     }
 
     public Class<? extends List> getDefaultListImpl() {
@@ -65,127 +65,13 @@ public class ObjectStringTransformer {
     public void setDefaultSetImpl(Class<? extends Set> defaultSetImpl) {
         this.defaultSetImpl = defaultSetImpl;
     }
-    private HashMap<Class, Integer> selectMethodMap = new HashMap<Class, Integer>() {
-
-        {
-            put(Byte.class, 0);
-            put(byte.class, 0);
-
-            put(Double.class, 1);
-            put(double.class, 1);
-
-            put(Float.class, 2);
-            put(float.class, 2);
-
-            put(Long.class, 3);
-            put(long.class, 3);
-
-            put(Integer.class, 4);
-            put(int.class, 4);
-
-            put(Short.class, 5);
-            put(short.class, 5);
-
-            put(Boolean.class, 6);
-            put(boolean.class, 6);
-
-            put(Character.class, 7);
-            put(char.class, 7);
-
-            put(Map.class, 108);
-            put(HashMap.class, 108);
-
-            put(Set.class, 109);
-            put(HashSet.class, 109);
-
-            put(ArrayList.class, 110);
-
-            put(LinkedHashSet.class, 111);
-
-            put(LinkedHashMap.class, 112);
-
-            put(LinkedList.class, 113);
-        }
-    };
 
     public Object parsePrimitiveOrCollection(Class tmpClazz, Node node) {
-        int result = getClassAsInteger(tmpClazz);
-
-        switch (result) {
-            case 0:
-                return (Byte) Byte.parseByte(node.getTextContent());
-            case 1:
-                return (Double) Double.parseDouble(node.getTextContent());
-            case 2:
-                return (Float) Float.parseFloat(node.getTextContent());
-            case 3:
-                return (Long) Long.parseLong(node.getTextContent());
-            case 4:
-                return (Integer) Integer.parseInt(node.getTextContent());
-            case 5:
-                return (Short) Short.parseShort(node.getTextContent());
-            case 6:
-                return (Boolean) Boolean.parseBoolean(node.getTextContent());
-            case 7:
-                String str = node.getTextContent();
-                if (str.length() > 0)
-                    return str.charAt(0);
-                return str;
-
-            case 108:
-                Map map;
-                try {
-                    map = defaultMapImpl.newInstance();
-                } catch (Exception ex) {
-                    map = new HashMap();
-                }
-                fillMap(map, node);
-                return map;
-
-            case 109:
-                Set set;
-                try {
-                    set = defaultSetImpl.newInstance();
-                } catch (Exception ex) {
-                    set = new HashSet();
-                }
-                fillCollection(set, node);
-                return set;
-
-            case 110:
-                List list;
-                try {
-                    list = defaultListImpl.newInstance();
-                } catch (Exception ex) {
-                    list = new ArrayList();
-                }
-                fillCollection(list, node);
-                return list;
-
-            case 111:
-                Set linkedSet = new LinkedHashSet();
-                fillCollection(linkedSet, node);
-                return linkedSet;
-
-            case 112:
-                Map linkedMap = new LinkedHashMap();
-                fillMap(linkedMap, node);
-                return linkedMap;
-
-            case 113:
-                List linkedList = new LinkedList();
-                fillCollection(linkedList, node);
-                return linkedList;
-
-            case 114:
-                List arrayList = new ArrayList();
-                fillCollection(arrayList, node);
-                Object array[] = (Object[]) Array.newInstance(tmpClazz.getComponentType(), arrayList.size());
-                return arrayList.toArray(array);
-
-            default:
-                return node.getTextContent();
+        Parsing parsing = getClassParsing(tmpClazz);
+        if (parsing == null) {
+            return null;
         }
+        return parsing.parse(node);
     }
 
     private void fillCollection(Collection coll, Node node) {
@@ -198,16 +84,19 @@ public class ObjectStringTransformer {
             Class valueType = getPrimitiveClass(valC);
 
             NodeList list = root.getChildNodes();
-            for (int ii = 0; ii < list.getLength(); ii++) {
+            for (int ii = 0; ii <
+                    list.getLength(); ii++) {
                 Node tmpNode = list.item(ii);
                 if (tmpNode.getNodeType() != Node.ELEMENT_NODE)
                     continue;
 
                 coll.add(parsePrimitiveOrCollection(valueType, tmpNode));
             }
+
         } catch (Exception ex) {
             throw new RuntimeException(ex);
         }
+
     }
 
     private void fillMap(Map map, Node node) {
@@ -222,7 +111,8 @@ public class ObjectStringTransformer {
             Class keyType = getPrimitiveClass(keyC);
 
             NodeList entryNodes = root.getChildNodes();
-            for (int ii = 0; ii < entryNodes.getLength(); ii++) {
+            for (int ii = 0; ii <
+                    entryNodes.getLength(); ii++) {
                 Node tmpNode = entryNodes.item(ii);
                 if (tmpNode.getNodeType() != Node.ELEMENT_NODE)
                     continue;
@@ -230,7 +120,8 @@ public class ObjectStringTransformer {
                 NodeList keyAndValueNodes = tmpNode.getChildNodes();
                 Node keyNode = null;
                 Node valueNode = null;
-                for (int jj = 0; jj < keyAndValueNodes.getLength(); jj++) {
+                for (int jj = 0; jj <
+                        keyAndValueNodes.getLength(); jj++) {
                     Node keyOrValue = keyAndValueNodes.item(jj);
                     if (keyOrValue.getNodeType() != Node.ELEMENT_NODE)
                         continue;
@@ -248,59 +139,12 @@ public class ObjectStringTransformer {
                 if (valueNode != null && keyNode != null)
                     map.put(parsePrimitiveOrCollection(keyType, keyNode), parsePrimitiveOrCollection(valueType, valueNode));
             }
+
         } catch (Exception ex) {
             throw new RuntimeException(ex);
         }
     }
-    private Map<String, Class> stringToPrimitiveClasses = new HashMap<String, Class>() {
-
-        {
-            put("byte", Byte.class);
-
-            put("double", Double.class);
-            put("float", Float.class);
-
-            put("long", Long.class);
-            put("integer", Integer.class);
-
-            put("char", Character.class);
-
-            put("short", Short.class);
-
-            put("boolean", Boolean.class);
-
-            put("string", String.class);
-        }
-    };
-    private Map<Class, String> classToString = new HashMap<Class, String>() {
-
-        {
-            put(Byte.class, "byte");
-            put(byte.class, "byte");
-
-            put(Double.class, "double");
-            put(double.class, "double");
-            put(Float.class, "float");
-            put(float.class, "float");
-
-            put(Long.class, "long");
-            put(long.class, "long");
-            put(Integer.class, "integer");
-            put(int.class, "integer");
-
-            put(Character.class, "char");
-            put(char.class, "char");
-
-            put(Short.class, "short");
-            put(short.class, "short");
-
-            put(Boolean.class, "boolean");
-            put(boolean.class, "boolean");
-
-            put(String.class, "string");
-        }
-    };
-
+    
     private Class getPrimitiveClass(String attribute) throws ClassNotFoundException {
         Class res = stringToPrimitiveClasses.get(attribute.toLowerCase());
         if (res == null)
@@ -395,21 +239,265 @@ public class ObjectStringTransformer {
         transformerHandler.endElement("", "", elementName);
     }
 
-    private int getClassAsInteger(Class tmpClazz) {
-        Integer result = selectMethodMap.get(tmpClazz);
-        if (result == null) {
+    private Parsing getClassParsing(Class tmpClazz) {
+        Parsing parsing = selectMethodMap.get(tmpClazz);
+        if (parsing == null) {
             if (Map.class.isAssignableFrom(tmpClazz)) {
-                result = 108;
+                parsing = mapParse;
             } else if (Set.class.isAssignableFrom(tmpClazz)) {
-                result = 109;
+                parsing = setParse;
             } else if (List.class.isAssignableFrom(tmpClazz)) {
-                result = 110;
+                parsing = listParse;
             } else if (tmpClazz.isArray()) {
-                result = 114;
-            } else
-                result = -1;
+                arrayParse.setComponentType(tmpClazz.getComponentType());
+                parsing = arrayParse;
+            }
         }
-        return result;
+        return parsing;
     }
+
+    interface Parsing {
+
+        /**
+         * Converts a node of a known class into an object.
+         */
+        Object parse(Node node);
+    }
+    private static Parsing byteParse = new Parsing() {
+
+        public Object parse(Node node) {
+            return Byte.parseByte(node.getTextContent());
+        }
+    };
+    private static Parsing floatParse = new Parsing() {
+
+        public Object parse(Node node) {
+            return Float.parseFloat(node.getTextContent());
+        }
+    };
+    private static Parsing doubleParse = new Parsing() {
+
+        public Object parse(Node node) {
+            return Double.parseDouble(node.getTextContent());
+        }
+    };
+    private static Parsing longParse = new Parsing() {
+
+        public Object parse(Node node) {
+            return Long.parseLong(node.getTextContent());
+        }
+    };
+    private static Parsing intParse = new Parsing() {
+
+        public Object parse(Node node) {
+            return Integer.parseInt(node.getTextContent());
+        }
+    };
+    private static Parsing shortParse = new Parsing() {
+
+        public Object parse(Node node) {
+            return Short.parseShort(node.getTextContent());
+        }
+    };
+    private static Parsing boolParse = new Parsing() {
+
+        public Object parse(Node node) {
+            return Boolean.parseBoolean(node.getTextContent());
+        }
+    };
+    private static Parsing charParse = new Parsing() {
+
+        public Object parse(Node node) {
+            String str = node.getTextContent();
+            if (str.length() > 0)
+                return str.charAt(0);
+            return "";
+        }
+    };
+    private Parsing mapParse = new Parsing() {
+
+        public Object parse(Node node) {
+            Map map;
+            try {
+                map = defaultMapImpl.newInstance();
+            } catch (Exception ex) {
+                map = new HashMap();
+            }
+            fillMap(map, node);
+            return map;
+        }
+    };
+    private Parsing setParse = new Parsing() {
+
+        public Object parse(Node node) {
+            Set set;
+            try {
+                set = defaultSetImpl.newInstance();
+            } catch (Exception ex) {
+                set = new HashSet();
+            }
+            fillCollection(set, node);
+            return set;
+        }
+    };
+    private Parsing listParse = new Parsing() {
+
+        public Object parse(Node node) {
+            List list;
+            try {
+                list = defaultListImpl.newInstance();
+            } catch (Exception ex) {
+                list = new ArrayList();
+            }
+            fillCollection(list, node);
+            return list;
+        }
+    };
+    private Parsing linkedSetParse = new Parsing() {
+
+        public Object parse(Node node) {
+            Set linkedSet = new LinkedHashSet();
+            fillCollection(linkedSet, node);
+            return linkedSet;
+        }
+    };
+    private Parsing linkedMapParse = new Parsing() {
+
+        public Object parse(Node node) {
+            Map linkedMap = new LinkedHashMap();
+            fillMap(linkedMap, node);
+            return linkedMap;
+        }
+    };
+    private Parsing linkedListParse = new Parsing() {
+
+        public Object parse(Node node) {
+            List linkedList = new LinkedList();
+            fillCollection(linkedList, node);
+            return linkedList;
+        }
+    };
+    private Parsing stringParse = new Parsing() {
+
+        public Object parse(Node node) {
+            return node.getTextContent();
+        }
+    };
+    private ArrayParsing arrayParse = new ArrayParsing();
+
+    class ArrayParsing implements Parsing {
+
+        private Class ct;
+
+        public void setComponentType(Class clazz) {
+            ct = clazz;
+        }
+
+        public Object parse(Node node) {
+            List arrayList = new ArrayList();
+            fillCollection(arrayList, node);
+            Object array[] = (Object[]) Array.newInstance(ct, arrayList.size());
+            return arrayList.toArray(array);
+        }
+    };
+
+    // it is important that this declaration comes after all Parsing objects
+    // are initialized
+    private HashMap<Class, Parsing> selectMethodMap = new HashMap<Class, Parsing>() {
+
+        {
+            put(Byte.class, byteParse);
+            put(byte.class, byteParse);
+
+            put(Double.class, doubleParse);
+            put(double.class, doubleParse);
+
+            put(Float.class, floatParse);
+            put(float.class, floatParse);
+
+            put(Long.class, longParse);
+            put(long.class, longParse);
+
+            put(Integer.class, intParse);
+            put(int.class, intParse);
+
+            put(Short.class, shortParse);
+            put(short.class, shortParse);
+
+            put(Boolean.class, boolParse);
+            put(boolean.class, boolParse);
+
+            put(Character.class, charParse);
+            put(char.class, charParse);
+
+            put(Map.class, mapParse);
+            put(HashMap.class, mapParse);
+
+            put(Set.class, setParse);
+            put(HashSet.class, setParse);
+
+            put(ArrayList.class, listParse);
+
+            put(LinkedHashSet.class, linkedSetParse);
+
+            put(LinkedHashMap.class, linkedMapParse);
+
+            put(LinkedList.class, linkedListParse);
+
+            put(String.class, stringParse);
+        }
+    };
+
+    private Map<String, Class> stringToPrimitiveClasses = new HashMap<String, Class>() {
+
+        {
+            put("byte", Byte.class);
+
+            put("double", Double.class);
+
+            put("float", Float.class);
+
+            put("long", Long.class);
+
+            put("integer", Integer.class);
+
+            put("char", Character.class);
+
+            put("short", Short.class);
+
+            put("boolean", Boolean.class);
+
+            put("string", String.class);
+        }
+    };
+    private Map<Class, String> classToString = new HashMap<Class, String>() {
+
+        {
+            put(Byte.class, "byte");
+            put(byte.class, "byte");
+
+            put(Double.class, "double");
+            put(double.class, "double");
+            put(Float.class, "float");
+            put(float.class, "float");
+
+            put(Long.class, "long");
+            put(long.class, "long");
+            put(Integer.class, "integer");
+            put(int.class, "integer");
+
+            put(Character.class, "char");
+            put(char.class, "char");
+
+            put(Short.class, "short");
+            put(short.class, "short");
+
+            put(Boolean.class, "boolean");
+            put(boolean.class, "boolean");
+
+            put(String.class, "string");
+        }
+    };
+
 }
 
