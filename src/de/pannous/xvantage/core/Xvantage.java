@@ -25,13 +25,14 @@ import org.xml.sax.helpers.XMLReaderFactory;
 public class Xvantage {
 
     private String encoding = "UTF-8";
-    private BindingTree bindingTree = new BindingTree();
-    private List<Exception> exceptions = new ArrayList<Exception>();
-    private ObjectStringTransformer parser = new ObjectStringTransformer();
-    private boolean related = false;
+    private ObjectStringTransformer transformer;
+    private BindingTree bindingTree;
+    private List<Exception> exceptions = new ArrayList<Exception>();    
     private Class<? extends DataPool> defaultDataPool = DefaultDataPool.class;
 
     public Xvantage() {
+        transformer = new ObjectStringTransformer();
+        bindingTree = new BindingTree(transformer);
     }
 
     /**
@@ -41,7 +42,8 @@ public class Xvantage {
         try {
             Constructor<? extends DataPool> c = Helper.getPrivateConstructor(defaultDataPool);
             DataPool dataPool = c.newInstance();
-            XHandler handler = new XHandler(dataPool, bindingTree, exceptions);
+            transformer.setDataPool(dataPool);
+            XHandler handler = new XHandler(transformer, bindingTree, exceptions);
             XMLReader xr = XMLReaderFactory.createXMLReader();
             xr.setContentHandler(handler);
             InputSource iSource = new InputSource(reader);
@@ -68,9 +70,10 @@ public class Xvantage {
     /**
      * @param pool should contain some objects you want to persist
      */
-    public void saveObjects(DataPool pool, Writer writer) {
+    public void saveObjects(DataPool dataPool, Writer writer) {
         try {
-            bindingTree.saveObjects(exceptions, pool, writer, encoding);
+            transformer.setDataPool(dataPool);
+            bindingTree.saveObjects(exceptions, dataPool, writer, encoding);
         } catch (Exception ex) {
             throw new RuntimeException(ex);
         }
@@ -106,7 +109,7 @@ public class Xvantage {
      * @param aClass the class which will be mounted into the path
      */
     public void mount(String path, Class aClass) {
-        bindingTree.mount(new Binding(parser, path, aClass));
+        bindingTree.mount(new Binding(path, aClass));
     }
 
     /**
@@ -115,22 +118,22 @@ public class Xvantage {
      */
     public <T> void setDefaultImplementation(Class<T> interfc, Class<? extends T> clazz) {
         if (Map.class.equals(interfc))
-            parser.setDefaultMapImpl((Class) clazz);
+            transformer.setDefaultMapImpl((Class) clazz);
         else if (List.class.equals(interfc))
-            parser.setDefaultListImpl((Class) clazz);
+            transformer.setDefaultListImpl((Class) clazz);
         else if (Set.class.equals(interfc))
-            parser.setDefaultSetImpl((Class) clazz);
+            transformer.setDefaultSetImpl((Class) clazz);
         else
             throw new UnsupportedOperationException("Currently you can only set the default implementations for List, Map and Set");
     }
 
     public <T> Class<? extends T> getDefaultImplementation(Class<T> interfc) {
         if (Map.class.equals(interfc))
-            return (Class<? extends T>) parser.getDefaultMapImpl();
+            return (Class<? extends T>) transformer.getDefaultMapImpl();
         else if (List.class.equals(interfc))
-            return (Class<? extends T>) parser.getDefaultListImpl();
+            return (Class<? extends T>) transformer.getDefaultListImpl();
         else if (Set.class.equals(interfc))
-            return (Class<? extends T>) parser.getDefaultSetImpl();
+            return (Class<? extends T>) transformer.getDefaultSetImpl();
         else
             throw new UnsupportedOperationException("Currently you can only set the default implementations for List, Map and Set");
     }
@@ -141,14 +144,6 @@ public class Xvantage {
      */
     public List<Exception> getExceptions() {
         return exceptions;
-    }
-
-    /**
-     * TODO this should be default behaviour
-     * @deprecated 
-     */
-    public void setRelated(boolean b) {
-        related = b;
     }
 
     public void setDefaultDataPool(Class<? extends DataPool> clazz) {

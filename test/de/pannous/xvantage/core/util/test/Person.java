@@ -1,7 +1,7 @@
 package de.pannous.xvantage.core.util.test;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author Peter Karich, peat_hal 'at' users 'dot' sourceforge 'dot' net
@@ -10,10 +10,15 @@ public class Person {
 
     private String name;
     private Task mainTask;
-    private Set<Task> tasks = new HashSet<Task>();
+    private List<Task> tasks = new ArrayList<Task>();
     private long id;
 
     public Person() {
+    }
+
+    public Person(String n, Long id) {
+        setName(n);
+        setId(id);
     }
 
     public Person(String n) {
@@ -41,15 +46,15 @@ public class Person {
     }
 
     public void setMainTask(Task mainTask) {
-        
+
         this.mainTask = mainTask;
     }
 
-    public Set<Task> getTasks() {
+    public List<Task> getTasks() {
         return tasks;
     }
 
-    public void setTasks(Set<Task> tasks) {
+    public void setTasks(List<Task> tasks) {
         this.tasks = tasks;
     }
 }

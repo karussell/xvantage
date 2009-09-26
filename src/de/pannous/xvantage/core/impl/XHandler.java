@@ -4,6 +4,7 @@ import de.pannous.xvantage.core.Binding;
 import de.pannous.xvantage.core.BindingLeaf;
 import de.pannous.xvantage.core.BindingTree;
 import de.pannous.xvantage.core.DataPool;
+import de.pannous.xvantage.core.ObjectStringTransformer;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -18,7 +19,6 @@ import org.xml.sax.helpers.DefaultHandler;
  */
 public class XHandler extends DefaultHandler {
 
-    private DataPool dataPool;
     private Binding activeBinding;
     private BindingLeaf currentLeaf;
     private StringBuilder sbForOneElement = new StringBuilder();
@@ -29,9 +29,10 @@ public class XHandler extends DefaultHandler {
      */
     private int mismatchInTree = 0;
     private List<Exception> exceptions;
+    private ObjectStringTransformer transformer;
 
-    public XHandler(DataPool pool, BindingTree bindingTree, List<Exception> exceptions) {
-        dataPool = pool;
+    public XHandler(ObjectStringTransformer tr, BindingTree bindingTree, List<Exception> exceptions) {
+        transformer = tr;
         this.exceptions = exceptions;
         currentLeaf = bindingTree.getRoot();
         if (currentLeaf == null)
@@ -52,8 +53,9 @@ public class XHandler extends DefaultHandler {
 
         if (currentLeaf.getMountedBindingsMap().get(qName) != null && mismatchInTree == 0) {
             Binding bind = currentLeaf.getMountedBindingsMap().get(qName);
-            if (bind != null && activeBinding == null)
+            if (bind != null && activeBinding == null) {
                 activeBinding = bind;
+            }
         }
 
         if (activeBinding != null) {
@@ -72,14 +74,11 @@ public class XHandler extends DefaultHandler {
 
             if (qName.equals(activeBinding.getElementName())) {
                 String value = sbForOneElement.toString();
-                Map<Long, Object> map = dataPool.getData(activeBinding.getClassObject());
 
                 // TODO PERFORMANCE: parse the already parsed string again :-(
                 // by now we can use DOM. this is easier for now
                 try {
-                    Entry<Long, Object> entry = activeBinding.parseObject(value);
-                    if (entry != null)
-                        map.put(entry.getKey(), entry.getValue());
+                    transformer.parseObject(activeBinding, value);
                 } catch (Exception ex) {
                     exceptions.add(ex);
                 }
@@ -108,6 +107,6 @@ public class XHandler extends DefaultHandler {
     }
 
     public DataPool getResult() {
-        return dataPool;
+        return transformer.getDataPool();
     }
 }

@@ -25,6 +25,11 @@ public class BindingTree {
     private Map<Class, Binding> bindings = new HashMap<Class, Binding>();
     private BindingLeaf root;
     private int maxLevel;
+    private ObjectStringTransformer parser;
+
+    public BindingTree(ObjectStringTransformer tr) {
+        parser = tr;
+    }
 
     public void mount(Binding binding) {
         Binding old = bindings.put(binding.getClassObject(), binding);
@@ -84,7 +89,7 @@ public class BindingTree {
             Writer writer,
             String encoding)
             throws SAXException, TransformerConfigurationException {
-        
+
         StreamResult streamResult = new StreamResult(writer);
         SAXTransformerFactory tf = (SAXTransformerFactory) SAXTransformerFactory.newInstance();
 
@@ -103,8 +108,8 @@ public class BindingTree {
         transformerHandler.endDocument();
     }
 
-    private void processDoc(List<Exception> exceptions, 
-            DataPool pool,
+    private void processDoc(List<Exception> exceptions,
+            DataPool dataPool,
             TransformerHandler transformerHandler)
             throws SAXException {
         BindingLeaf tmpRoot = root;
@@ -118,11 +123,12 @@ public class BindingTree {
 
         for (BindingLeaf leaf : tmpRoot.getChilds()) {
             for (Binding bind : leaf.getMountedBindings()) {
-                Map<Long, Object> tmpMap = pool.getData(bind.getClassObject());
+                Map<Long, Object> tmpMap = dataPool.getData(bind.getClassObject()).getAll();
                 if (tmpMap != null) {
+
                     for (Object oneObject : tmpMap.values()) {
                         try {
-                            bind.writeObject(oneObject, transformerHandler);
+                            parser.writeObject(bind, oneObject, transformerHandler);
                         } catch (Exception ex) {
                             exceptions.add(ex);
                         }

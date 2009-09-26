@@ -1,12 +1,11 @@
 package de.pannous.xvantage.core;
 
-import de.pannous.xvantage.core.Xvantage;
-import de.pannous.xvantage.core.DataPool;
+import de.pannous.xvantage.core.util.BiMap;
 import de.pannous.xvantage.core.util.test.SimpleObj;
-import de.pannous.xvantage.core.impl.DefaultDataPool;
 import de.pannous.xvantage.core.util.test.ComplexObject;
 import de.pannous.xvantage.core.util.test.Person;
 import de.pannous.xvantage.core.util.test.Task;
+import de.pannous.xvantage.core.util.test.XvantageTester;
 import java.io.InputStream;
 import java.io.StringReader;
 import java.io.StringWriter;
@@ -25,7 +24,7 @@ import static org.junit.Assert.*;
 /**
  * @author Peter Karich, peat_hal 'at' users 'dot' sourceforge 'dot' net
  */
-public class XvantageTest {
+public class XvantageTest extends XvantageTester {
 
     private static String HEADER = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
     private Xvantage xadv = new Xvantage();
@@ -34,7 +33,9 @@ public class XvantageTest {
     }
 
     @Before
-    public void setUp() {
+    @Override
+    public void setUp() throws Exception {
+        super.setUp();
         xadv = new Xvantage();
     }
 
@@ -43,7 +44,7 @@ public class XvantageTest {
         for (Exception ex : xadv.getExceptions()) {
             ex.printStackTrace();
         }
-        assertEquals(0, xadv.getExceptions().size());
+        assertEquals("exceptions occured!", 0, xadv.getExceptions().size());
     }
 
     @Test
@@ -108,18 +109,17 @@ public class XvantageTest {
 
     @Test
     public void testWrite() {
-        DataPool pool = new DefaultDataPool();
-        Map<Long, SimpleObj> map = pool.getData(SimpleObj.class);
+        BiMap<Long, SimpleObj> map = dataPool.getData(SimpleObj.class);
         map.put(0L, new SimpleObj("test"));
         StringWriter writer = new StringWriter();
         xadv.mount("/path/myobject", SimpleObj.class);
-        xadv.saveObjects(pool, writer);
+        xadv.saveObjects(dataPool, writer);
 
         String expected = HEADER +
                 "<path>\n" +
                 "<myobject>\n<name>test</name>\n</myobject>\n" +
                 "</path>\n";
-        
+
         assertEquals(expected, writer.toString());
     }
 
@@ -134,14 +134,13 @@ public class XvantageTest {
 
     @Test
     public void testWriteTwoObjects() {
-        DataPool pool = new DefaultDataPool();
-        Map<Long, SimpleObj> map = pool.getData(SimpleObj.class);
+        BiMap<Long, SimpleObj> map = dataPool.getData(SimpleObj.class);
         map.put(0L, new SimpleObj("test"));
         map.put(1L, new SimpleObj("test2"));
 
         StringWriter writer = new StringWriter();
         xadv.mount("/p1/myobject", SimpleObj.class);
-        xadv.saveObjects(pool, writer);
+        xadv.saveObjects(dataPool, writer);
 
         String result = writer.toString();
 
@@ -165,15 +164,14 @@ public class XvantageTest {
 
     @Test
     public void testWriteTwoRelatedObjects() {
-        DataPool pool = new DefaultDataPool();
-        Map<Long, Person> pMap = pool.getData(Person.class);
+        BiMap<Long, Person> pMap = dataPool.getData(Person.class);
 
         Person p1 = new Person("p1");
         Person p2 = new Person("p2");
         pMap.put(p1.getId(), p1);
         pMap.put(p2.getId(), p2);
 
-        Map<Long, Task> tMap = pool.getData(Task.class);
+        BiMap<Long, Task> tMap = dataPool.getData(Task.class);
         Task t1 = new Task("t1");
         Task t2 = new Task("t2");
         tMap.put(t1.getId(), t1);
@@ -191,15 +189,14 @@ public class XvantageTest {
 
         StringWriter writer = new StringWriter();
 
-        xadv.setRelated(true);
         xadv.mount("/root/", Person.class);
         xadv.mount("/root/", Task.class);
-        
-        xadv.saveObjects(pool, writer);
-        String result = writer.toString();
 
+        xadv.saveObjects(dataPool, writer);
+        String result = writer.toString();
+        System.out.println(result);
         assertTrue(result.contains(HEADER));
-        assertTrue(result.contains("<myobject>\n<name>test2</name>\n</myobject>\n"));
-        assertTrue(result.contains("<myobject>\n<name>test</name>\n</myobject>\n"));
+        assertTrue(result.contains("<tasks valueClass=\"Task\">\n<value>0</value>\n</tasks>"));
+        assertTrue(result.contains("<persons valueClass=\"Person\">\n<value>0</value>\n</persons>"));
     }
 }

@@ -1,6 +1,7 @@
 package de.pannous.xvantage.core.impl;
 
 import de.pannous.xvantage.core.DataPool;
+import de.pannous.xvantage.core.util.BiMap;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -9,19 +10,22 @@ import java.util.Map;
  */
 public class DefaultDataPool implements DataPool {
 
-    private Map<Class, Map<Long, Object>> objects = new HashMap<Class, Map<Long, Object>>();
+    private Map<Class, BiMap<Long, Object>> objects = new HashMap<Class, BiMap<Long, Object>>();
 
-    public Map<Class, Map<Long, Object>> getAll() {
+    public Map<Class, BiMap<Long, Object>> getAll() {
         return objects;
     }
 
-    public <T> Map<Long, T> getData(Class<T> clazz) {
-        Map<Long, Object> map = objects.get(clazz);
+    public <T> BiMap<Long, T> getData(Class<T> clazz) {
+        if(clazz == null)
+            return null;
+        
+        BiMap<Long, Object> map = objects.get(clazz);
         if (map == null) {
-            map = new HashMap();
+            map = new BiMap();
             objects.put(clazz, map);
         }
-        return (Map<Long, T>) map;
+        return (BiMap<Long, T>) map;
     }
 }
 

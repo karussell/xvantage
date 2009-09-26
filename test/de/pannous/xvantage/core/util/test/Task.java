@@ -17,6 +17,11 @@ public class Task {
     public Task() {
     }
 
+    public Task(String n, Long id) {
+        setName(n);
+        setId(id);
+    }
+
     public Task(String n) {
         setName(n);
     }
@@ -59,5 +64,5 @@ public class Task {
 
     public void setPersons(List<Person> persons) {
         this.persons = persons;
-    }   
+    }
 }

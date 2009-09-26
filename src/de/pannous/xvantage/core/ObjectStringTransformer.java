@@ -1,7 +1,13 @@
 package de.pannous.xvantage.core;
 
-import de.pannous.xvantage.core.ObjectStringTransformer.Parsing;
-import java.lang.reflect.Array;
+import de.pannous.xvantage.core.parsing.Parsing;
+import de.pannous.xvantage.core.parsing.ArrayParsing;
+import de.pannous.xvantage.core.util.BiMap;
+import de.pannous.xvantage.core.util.Helper;
+import de.pannous.xvantage.core.util.MapEntry;
+import java.io.StringReader;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -13,10 +19,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.sax.TransformerHandler;
+import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.AttributesImpl;
 
@@ -30,16 +41,36 @@ import org.xml.sax.helpers.AttributesImpl;
  */
 public class ObjectStringTransformer {
 
-    private final static String valueClassStr = "valueClass";
-    private final static String keyClassStr = "keyClass";
-    private final static String valueStr = "value";
-    private final static String keyStr = "key";
-    private final static String entryStr = "entry";
+    private final String valueClassStr = "valueClass";
+    private final String keyClassStr = "keyClass";
+    private final String valueStr = "value";
+    private final String keyStr = "key";
+    private final String entryStr = "entry";
     private Class<? extends Map> defaultMapImpl = HashMap.class;
     private Class<? extends Set> defaultSetImpl = HashSet.class;
     private Class<? extends List> defaultListImpl = ArrayList.class;
+    private DataPool dataPool;
+    private DocumentBuilder builder;
+    private long idCounter = 0;
+    private AttributesImpl atts = new AttributesImpl();
 
     public ObjectStringTransformer() {
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        factory.setValidating(false);
+        factory.setNamespaceAware(false);
+        try {
+            builder = factory.newDocumentBuilder();
+        } catch (ParserConfigurationException ex) {
+            throw new RuntimeException(ex);
+        }
+    }
+
+    public DataPool getDataPool() {
+        return dataPool;
+    }
+
+    public void setDataPool(DataPool dataPool) {
+        this.dataPool = dataPool;
     }
 
     public Class<? extends List> getDefaultListImpl() {
@@ -66,40 +97,100 @@ public class ObjectStringTransformer {
         this.defaultSetImpl = defaultSetImpl;
     }
 
-    public Object parsePrimitiveOrCollection(Class tmpClazz, Node node) {
+    /**
+     * @return the id and one parsed object
+     */
+    public <T> Entry<Long, T> parseObject(Binding<T> binding, String value) throws Exception {
+        Document doc = builder.parse(new InputSource(new StringReader(value)));
+
+        Class clazz = binding.getClassObject();
+        Map<Long, T> objects = dataPool.getData(clazz);
+        Element firstElement = Helper.getFirstElement(doc.getChildNodes());
+        Long id;
+        try {
+            id = Long.parseLong(firstElement.getAttribute("id"));
+        } catch (Exception ex) {
+            id = idCounter++;
+        }
+        T obj = objects.get(id);
+        if (obj != null)
+            throw new UnsupportedOperationException("Duplicate ids detected: " + id);
+
+        Constructor c = Helper.getPrivateConstructor(clazz);
+        if (c == null)
+            throw new IllegalAccessException("Cannot access constructor of " + clazz);
+
+        obj = (T) c.newInstance();
+        objects.put(id, obj);
+
+        fillWithProperties(binding, obj, firstElement.getChildNodes());
+        return new MapEntry<Long, T>(id, obj);
+    }
+
+    /**
+     * @param obj the object to be initialized with the properties
+     * @param list of nodes which should be the properties of an object the mounted class
+     *
+     * @throws Exception, NumberFormatException could occur, failure to call newInstance, ..
+     */
+    private <T> void fillWithProperties(Binding<T> binding, T obj, NodeList list) throws Exception {
+        for (int ii = 0; ii < list.getLength(); ii++) {
+            Node node = list.item(ii);
+            if (node.getNodeType() != Node.ELEMENT_NODE)
+                continue;
+            Method m = binding.getSetterMethods().get(node.getNodeName());
+            if (m == null)
+                continue;
+
+            Class tmpClazz = m.getParameterTypes()[0];
+            m.invoke(obj, parseObject(tmpClazz, node));
+        }
+    }
+
+    Object parseObject(Class tmpClazz, Node node) {
         Parsing parsing = getClassParsing(tmpClazz);
         if (parsing == null) {
-            return null;
+            Long id = (Long) longParse.parse(node);
+            Map<Long, Object> map = dataPool.getData(tmpClazz);
+            Object obj = map.get(id);
+            if (obj == null) {
+                try {
+                    Constructor c = Helper.getPrivateConstructor(tmpClazz);
+                    obj = c.newInstance();
+                } catch (Exception ex) {
+                    try {
+                        obj = tmpClazz.newInstance();
+                    } catch (Exception ex2) {
+                        throw new UnsupportedOperationException("Couldn't call default constructor of " + tmpClazz, ex2);
+                    }
+                }
+                map.put(id, obj);
+            }
+            return obj;
         }
         return parsing.parse(node);
     }
 
-    private void fillCollection(Collection coll, Node node) {
+    public void fillCollection(Collection coll, Node node) {
         try {
             Element root = (Element) node;
             String valC = root.getAttribute(valueClassStr).trim();
             if (valC.length() == 0)
                 return;
 
-            Class valueType = getPrimitiveClass(valC);
-
+            Class valueType = getClassFromAlias(valC);
             NodeList list = root.getChildNodes();
-            for (int ii = 0; ii <
-                    list.getLength(); ii++) {
+            for (int ii = 0; ii < list.getLength(); ii++) {
                 Node tmpNode = list.item(ii);
-                if (tmpNode.getNodeType() != Node.ELEMENT_NODE)
-                    continue;
-
-                coll.add(parsePrimitiveOrCollection(valueType, tmpNode));
+                if (tmpNode.getNodeType() == Node.ELEMENT_NODE)
+                    coll.add(parseObject(valueType, tmpNode));
             }
-
         } catch (Exception ex) {
             throw new RuntimeException(ex);
         }
-
     }
 
-    private void fillMap(Map map, Node node) {
+    public void fillMap(Map map, Node node) {
         try {
             Element root = (Element) node;
             String valC = root.getAttribute(valueClassStr).trim();
@@ -107,12 +198,11 @@ public class ObjectStringTransformer {
             if (valC.length() == 0 || keyC.length() == 0)
                 return;
 
-            Class valueType = getPrimitiveClass(valC);
-            Class keyType = getPrimitiveClass(keyC);
+            Class valueType = getClassFromAlias(valC);
+            Class keyType = getClassFromAlias(keyC);
 
             NodeList entryNodes = root.getChildNodes();
-            for (int ii = 0; ii <
-                    entryNodes.getLength(); ii++) {
+            for (int ii = 0; ii < entryNodes.getLength(); ii++) {
                 Node tmpNode = entryNodes.item(ii);
                 if (tmpNode.getNodeType() != Node.ELEMENT_NODE)
                     continue;
@@ -120,8 +210,7 @@ public class ObjectStringTransformer {
                 NodeList keyAndValueNodes = tmpNode.getChildNodes();
                 Node keyNode = null;
                 Node valueNode = null;
-                for (int jj = 0; jj <
-                        keyAndValueNodes.getLength(); jj++) {
+                for (int jj = 0; jj < keyAndValueNodes.getLength(); jj++) {
                     Node keyOrValue = keyAndValueNodes.item(jj);
                     if (keyOrValue.getNodeType() != Node.ELEMENT_NODE)
                         continue;
@@ -137,40 +226,38 @@ public class ObjectStringTransformer {
                 }
 
                 if (valueNode != null && keyNode != null)
-                    map.put(parsePrimitiveOrCollection(keyType, keyNode), parsePrimitiveOrCollection(valueType, valueNode));
+                    map.put(parseObject(keyType, keyNode), parseObject(valueType, valueNode));
             }
 
         } catch (Exception ex) {
             throw new RuntimeException(ex);
         }
     }
-    
-    private Class getPrimitiveClass(String attribute) throws ClassNotFoundException {
-        Class res = stringToPrimitiveClasses.get(attribute.toLowerCase());
-        if (res == null)
-            return Class.forName(attribute);
 
-        return res;
+    public <T> void writeObject(Binding<T> binding, T oneObject, TransformerHandler transformerHandler) throws Exception {
+        transformerHandler.startElement("", "", binding.getElementName(), atts);
+
+        for (Entry<String, Method> tmpEntry : binding.getGetterMethods().entrySet()) {
+            Object result = tmpEntry.getValue().invoke(oneObject);
+            writeObjectAsProperty(result, tmpEntry.getValue().getReturnType(), tmpEntry.getKey(), transformerHandler);
+        }
+
+        transformerHandler.endElement("", "", binding.getElementName());
     }
-
-    private String getStringFromClass(Class clazz) {
-        String res = classToString.get(clazz);
-        if (res == null)
-            return clazz.getSimpleName();
-
-        return res;
-    }
-    private AttributesImpl atts = new AttributesImpl();
 
     /**
+     * This method writes the specified object to the transformerHandler as property.
+     * It will only write its id if object is not a primitive nor a collection.
+     *
+     * @see writeObject which writes the object with all of its properties
      *
      * @param object the object to be saved
-     * @param clazz is necessary for collections
+     * @param clazz is necessary to check if the object should be serialized as collections
      * @param elementName the name of the xml element
      * @param transformerHandler
      * @throws SAXException
      */
-    public void writePrimitiveOrCollection(Object object, Class clazz,
+    public void writeObjectAsProperty(Object object, Class clazz,
             String elementName, TransformerHandler transformerHandler) throws SAXException {
 
         atts.clear();
@@ -179,39 +266,39 @@ public class ObjectStringTransformer {
             Object[] array = (Object[]) object;
             int size = array.length;
             if (size == 0) {
-                atts.addAttribute("", "", valueClassStr, "", getStringFromClass(String.class));
+                atts.addAttribute("", "", valueClassStr, "", getAliasFromClass(String.class));
                 transformerHandler.startElement("", "", elementName, atts);
             } else {
                 boolean firstEntry = true;
                 for (Object innerObj : array) {
                     if (firstEntry) {
                         firstEntry = false;
-                        atts.addAttribute("", "", valueClassStr, "", getStringFromClass(innerObj.getClass()));
+                        atts.addAttribute("", "", valueClassStr, "", getAliasFromClass(innerObj.getClass()));
                         transformerHandler.startElement("", "", elementName, atts);
                     }
-                    writePrimitiveOrCollection(innerObj, innerObj.getClass(), valueStr, transformerHandler);
+                    writeObjectAsProperty(innerObj, innerObj.getClass(), valueStr, transformerHandler);
                 }
             }
         } else if (Collection.class.isAssignableFrom(clazz)) {
             int size = ((Collection) object).size();
             if (size == 0) {
-                atts.addAttribute("", "", valueClassStr, "", getStringFromClass(String.class));
+                atts.addAttribute("", "", valueClassStr, "", getAliasFromClass(String.class));
                 transformerHandler.startElement("", "", elementName, atts);
             } else {
                 boolean firstEntry = true;
                 for (Object innerObj : (Iterable) object) {
                     if (firstEntry) {
                         firstEntry = false;
-                        atts.addAttribute("", "", valueClassStr, "", getStringFromClass(innerObj.getClass()));
+                        atts.addAttribute("", "", valueClassStr, "", getAliasFromClass(innerObj.getClass()));
                         transformerHandler.startElement("", "", elementName, atts);
                     }
-                    writePrimitiveOrCollection(innerObj, innerObj.getClass(), valueStr, transformerHandler);
+                    writeObjectAsProperty(innerObj, innerObj.getClass(), valueStr, transformerHandler);
                 }
             }
         } else if (Map.class.isAssignableFrom(clazz)) {
             Map map = (Map) object;
             if (map.size() == 0) {
-                atts.addAttribute("", "", valueClassStr, "", getStringFromClass(String.class));
+                atts.addAttribute("", "", valueClassStr, "", getAliasFromClass(String.class));
                 transformerHandler.startElement("", "", elementName, atts);
             } else {
                 boolean firstEntry = true;
@@ -219,24 +306,49 @@ public class ObjectStringTransformer {
                     Entry entry = (Entry) innerObj;
                     if (firstEntry) {
                         firstEntry = false;
-                        atts.addAttribute("", "", valueClassStr, "", getStringFromClass(entry.getValue().getClass()));
-                        atts.addAttribute("", "", keyClassStr, "", getStringFromClass(entry.getKey().getClass()));
+                        atts.addAttribute("", "", valueClassStr, "", getAliasFromClass(entry.getValue().getClass()));
+                        atts.addAttribute("", "", keyClassStr, "", getAliasFromClass(entry.getKey().getClass()));
                         transformerHandler.startElement("", "", elementName, atts);
                         atts.clear();
                     }
                     transformerHandler.startElement("", "", entryStr, atts);
-                    writePrimitiveOrCollection(entry.getKey(), entry.getKey().getClass(), keyStr, transformerHandler);
-                    writePrimitiveOrCollection(entry.getValue(), entry.getValue().getClass(), valueStr, transformerHandler);
+                    writeObjectAsProperty(entry.getKey(), entry.getKey().getClass(), keyStr, transformerHandler);
+                    writeObjectAsProperty(entry.getValue(), entry.getValue().getClass(), valueStr, transformerHandler);
                     transformerHandler.endElement("", "", entryStr);
                 }
             }
         } else {
+            BiMap<Long, Object> ids = dataPool.getData(clazz);
+
+            if (ids != null) {
+                Long id = ids.getSecond(object);
+                if (id != null) {
+                    object = Long.toString(id);
+                }
+            }
+
             String str = object == null ? "" : object.toString();
             transformerHandler.startElement("", "", elementName, atts);
             transformerHandler.characters(str.toCharArray(), 0, str.length());
         }
 
         transformerHandler.endElement("", "", elementName);
+    }
+
+    private Class getClassFromAlias(String classAlias) throws ClassNotFoundException {
+        Class clazz = stringToPrimitiveClasses.get(classAlias.toLowerCase());
+        if (clazz == null)
+            return Class.forName(classAlias);
+
+        return clazz;
+    }
+
+    private String getAliasFromClass(Class clazz) {
+        String res = classToString.get(clazz);
+        if (res == null)
+            return clazz.getSimpleName();
+
+        return res;
     }
 
     private Parsing getClassParsing(Class tmpClazz) {
@@ -252,16 +364,9 @@ public class ObjectStringTransformer {
                 arrayParse.setComponentType(tmpClazz.getComponentType());
                 parsing = arrayParse;
             }
+            // else unknown class => no collection/primitive
         }
         return parsing;
-    }
-
-    interface Parsing {
-
-        /**
-         * Converts a node of a known class into an object.
-         */
-        Object parse(Node node);
     }
     private static Parsing byteParse = new Parsing() {
 
@@ -383,24 +488,7 @@ public class ObjectStringTransformer {
             return node.getTextContent();
         }
     };
-    private ArrayParsing arrayParse = new ArrayParsing();
-
-    class ArrayParsing implements Parsing {
-
-        private Class ct;
-
-        public void setComponentType(Class clazz) {
-            ct = clazz;
-        }
-
-        public Object parse(Node node) {
-            List arrayList = new ArrayList();
-            fillCollection(arrayList, node);
-            Object array[] = (Object[]) Array.newInstance(ct, arrayList.size());
-            return arrayList.toArray(array);
-        }
-    };
-
+    private ArrayParsing arrayParse = new ArrayParsing(this);
     // it is important that this declaration comes after all Parsing objects
     // are initialized
     private HashMap<Class, Parsing> selectMethodMap = new HashMap<Class, Parsing>() {
@@ -447,7 +535,7 @@ public class ObjectStringTransformer {
             put(String.class, stringParse);
         }
     };
-
+    // avoid long class names for primitive types
     private Map<String, Class> stringToPrimitiveClasses = new HashMap<String, Class>() {
 
         {
@@ -498,6 +586,5 @@ public class ObjectStringTransformer {
             put(String.class, "string");
         }
     };
-
 }
 

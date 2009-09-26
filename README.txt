@@ -48,6 +48,7 @@ there are a lot, because it is a young idea ;-)
     see this post for more information http://karussell.wordpress.com/2009/09/03/xml-serializers-for-java/
  * maybe not so fast
  * maybe not so stable like all the others
+ * is not thread save, you have to use multiple instances of the Xvantage class
 
   Advantages
 ==============
