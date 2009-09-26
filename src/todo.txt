@@ -1,4 +1,4 @@
- * references to others
+ * reading object with references fails -> getTask().add or addTask(Task)
  * even try heavy self circular references like so
    class Task { Task parentTask; List<Task> subTasks;}
  * deploy on maven2 repository

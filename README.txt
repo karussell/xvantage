@@ -6,9 +6,10 @@ Please give your feedback to peathal@yaaahoooo.com (some a and o too much ;-))
 Xvantage is yet another xml serializer and deserializer without much configuration
 hassle. It is well suited if you have java objects and want to serialize them
 into xml. This is possible without regenerating your xsd files on every class
-change. see more advantages in the Advantage section now just look at the
-code snippets and give xvantage a try!
-+ Add your test case to improve the stability!
+change. See more advantages in the "Advantage" section below.
+
+Now just look at the code snippets and give xvantage a try!
++ Clone this repository and add your test case to improve the stability!
 
   Reading
 ===============
@@ -61,7 +62,7 @@ There are X, because of the X in xvantage ;-)
    even between documents (you could read/write from/to multiple files)
  * well tested
  * no checked exceptions
- * manually editable look (== checked via xsd)
+ * xml could be checked via xsd (but no must)
 
   Xvantage compared to ...
 ==============================
@@ -87,5 +88,7 @@ I will use it in my timefinder.de project to save/read objects to/from xml
  * the default implementation of the DataPool (an interface) can be easily replaced:
    new Xvantage().setDefaultDataPool(MyDataPool.class);
    (factories are currently not supported)
+ * A BiMap in DataPool was necessary because of getting an id while writing an
+   object to string
  * the default implementations of a list, collection and set could be replaced
    through its methods in the Xadvantage class

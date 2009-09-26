@@ -9,6 +9,7 @@ import java.io.StringReader;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.BitSet;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -65,12 +66,13 @@ public class ObjectStringTransformer {
         }
     }
 
-    public DataPool getDataPool() {
-        return dataPool;
+    public void init(DataPool dataPool) {
+        this.dataPool = dataPool;
+        idCounter = 0;
     }
 
-    public void setDataPool(DataPool dataPool) {
-        this.dataPool = dataPool;
+    public DataPool getDataPool() {
+        return dataPool;
     }
 
     public Class<? extends List> getDefaultListImpl() {
@@ -150,23 +152,27 @@ public class ObjectStringTransformer {
     Object parseObject(Class tmpClazz, Node node) {
         Parsing parsing = getClassParsing(tmpClazz);
         if (parsing == null) {
-            Long id = (Long) longParse.parse(node);
-            Map<Long, Object> map = dataPool.getData(tmpClazz);
-            Object obj = map.get(id);
-            if (obj == null) {
-                try {
-                    Constructor c = Helper.getPrivateConstructor(tmpClazz);
-                    obj = c.newInstance();
-                } catch (Exception ex) {
+            try {
+                Long id = (Long) longParse.parse(node);
+                Map<Long, Object> map = dataPool.getData(tmpClazz);
+                Object obj = map.get(id);
+                if (obj == null) {
                     try {
-                        obj = tmpClazz.newInstance();
-                    } catch (Exception ex2) {
-                        throw new UnsupportedOperationException("Couldn't call default constructor of " + tmpClazz, ex2);
+                        Constructor c = Helper.getPrivateConstructor(tmpClazz);
+                        obj = c.newInstance();
+                    } catch (Exception ex) {
+                        try {
+                            obj = tmpClazz.newInstance();
+                        } catch (Exception ex2) {
+                            throw new UnsupportedOperationException("Couldn't call default constructor of " + tmpClazz, ex2);
+                        }
                     }
+                    map.put(id, obj);
                 }
-                map.put(id, obj);
+                return obj;
+            } catch (NumberFormatException ex) {
+                return null;
             }
-            return obj;
         }
         return parsing.parse(node);
     }
@@ -346,7 +352,7 @@ public class ObjectStringTransformer {
     private String getAliasFromClass(Class clazz) {
         String res = classToString.get(clazz);
         if (res == null)
-            return clazz.getSimpleName();
+            return clazz.getName();
 
         return res;
     }
@@ -371,43 +377,43 @@ public class ObjectStringTransformer {
     private static Parsing byteParse = new Parsing() {
 
         public Object parse(Node node) {
-            return Byte.parseByte(node.getTextContent());
+            return Byte.parseByte(node.getTextContent().trim());
         }
     };
     private static Parsing floatParse = new Parsing() {
 
         public Object parse(Node node) {
-            return Float.parseFloat(node.getTextContent());
+            return Float.parseFloat(node.getTextContent().trim());
         }
     };
     private static Parsing doubleParse = new Parsing() {
 
         public Object parse(Node node) {
-            return Double.parseDouble(node.getTextContent());
+            return Double.parseDouble(node.getTextContent().trim());
         }
     };
     private static Parsing longParse = new Parsing() {
 
         public Object parse(Node node) {
-            return Long.parseLong(node.getTextContent());
+            return Long.parseLong(node.getTextContent().trim());
         }
     };
     private static Parsing intParse = new Parsing() {
 
         public Object parse(Node node) {
-            return Integer.parseInt(node.getTextContent());
+            return Integer.parseInt(node.getTextContent().trim());
         }
     };
     private static Parsing shortParse = new Parsing() {
 
         public Object parse(Node node) {
-            return Short.parseShort(node.getTextContent());
+            return Short.parseShort(node.getTextContent().trim());
         }
     };
     private static Parsing boolParse = new Parsing() {
 
         public Object parse(Node node) {
-            return Boolean.parseBoolean(node.getTextContent());
+            return Boolean.parseBoolean(node.getTextContent().trim());
         }
     };
     private static Parsing charParse = new Parsing() {
@@ -488,6 +494,21 @@ public class ObjectStringTransformer {
             return node.getTextContent();
         }
     };
+    private Parsing bitSetParse = new Parsing() {
+
+        public Object parse(Node node) {
+            String bitSetAsStr = node.getTextContent();
+            // remove the {}
+            bitSetAsStr = bitSetAsStr.substring(1, bitSetAsStr.length() - 1);
+            BitSet bitSet = new BitSet();
+            for (String str : bitSetAsStr.split(",")) {
+                str = str.trim();
+                if (str.length() > 0)
+                    bitSet.set(Integer.parseInt(str.trim()));
+            }
+            return bitSet;
+        }
+    };
     private ArrayParsing arrayParse = new ArrayParsing(this);
     // it is important that this declaration comes after all Parsing objects
     // are initialized
@@ -533,6 +554,8 @@ public class ObjectStringTransformer {
             put(LinkedList.class, linkedListParse);
 
             put(String.class, stringParse);
+
+            put(BitSet.class, bitSetParse);
         }
     };
     // avoid long class names for primitive types
@@ -556,6 +579,8 @@ public class ObjectStringTransformer {
             put("boolean", Boolean.class);
 
             put("string", String.class);
+
+            put("bitSet", BitSet.class);
         }
     };
     private Map<Class, String> classToString = new HashMap<Class, String>() {
@@ -584,6 +609,8 @@ public class ObjectStringTransformer {
             put(boolean.class, "boolean");
 
             put(String.class, "string");
+
+            put(BitSet.class, "bitSet");
         }
     };
 }

@@ -5,7 +5,6 @@ import de.pannous.xvantage.core.util.test.ObjectWithCollections;
 import de.pannous.xvantage.core.util.test.Person;
 import de.pannous.xvantage.core.util.test.SimpleObj;
 import de.pannous.xvantage.core.util.test.Task;
-import de.pannous.xvantage.core.util.test.XvantageTester;
 import java.io.InputStream;
 import java.util.Map;
 import java.util.Map.Entry;

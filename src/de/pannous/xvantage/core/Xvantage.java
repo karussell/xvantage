@@ -42,7 +42,7 @@ public class Xvantage {
         try {
             Constructor<? extends DataPool> c = Helper.getPrivateConstructor(defaultDataPool);
             DataPool dataPool = c.newInstance();
-            transformer.setDataPool(dataPool);
+            transformer.init(dataPool);
             XHandler handler = new XHandler(transformer, bindingTree, exceptions);
             XMLReader xr = XMLReaderFactory.createXMLReader();
             xr.setContentHandler(handler);
@@ -70,10 +70,11 @@ public class Xvantage {
     /**
      * @param pool should contain some objects you want to persist
      */
-    public void saveObjects(DataPool dataPool, Writer writer) {
+    public Writer saveObjects(DataPool dataPool, Writer writer) {
         try {
-            transformer.setDataPool(dataPool);
+            transformer.init(dataPool);
             bindingTree.saveObjects(exceptions, dataPool, writer, encoding);
+            return writer;
         } catch (Exception ex) {
             throw new RuntimeException(ex);
         }

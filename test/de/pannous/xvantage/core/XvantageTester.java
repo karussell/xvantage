@@ -1,9 +1,5 @@
-package de.pannous.xvantage.core.util.test;
+package de.pannous.xvantage.core;
 
-import de.pannous.xvantage.core.Binding;
-import de.pannous.xvantage.core.BindingTree;
-import de.pannous.xvantage.core.DataPool;
-import de.pannous.xvantage.core.ObjectStringTransformer;
 import de.pannous.xvantage.core.impl.DefaultDataPool;
 
 /**
@@ -21,7 +17,7 @@ public class XvantageTester {
 
         // reconfigure objectParser for every new Xvantage.readObjects call
         dataPool = new DefaultDataPool();
-        objectParser.setDataPool(dataPool);
+        objectParser.init(dataPool);
     }
 
     protected <T> Binding<T> newBinding(String string, Class<T> aClass) {

@@ -1,7 +1,6 @@
 package de.pannous.xvantage.core;
 
 import de.pannous.xvantage.core.util.test.SimpleObj;
-import de.pannous.xvantage.core.util.test.XvantageTester;
 import org.junit.Before;
 import org.junit.Test;
 import static org.junit.Assert.*;

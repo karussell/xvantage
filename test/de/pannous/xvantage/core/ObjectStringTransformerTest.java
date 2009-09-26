@@ -10,10 +10,10 @@ import de.pannous.xvantage.core.util.test.ObjectWithCollections;
 import de.pannous.xvantage.core.util.test.Person;
 import de.pannous.xvantage.core.util.test.SimpleObj;
 import de.pannous.xvantage.core.util.test.Task;
-import de.pannous.xvantage.core.util.test.XvantageTester;
 import java.io.InputStream;
 import java.io.StringWriter;
 import java.util.ArrayList;
+import java.util.BitSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -68,6 +68,7 @@ public class ObjectStringTransformerTest extends XvantageTester {
         assertEquals(3.56f, objectParser.parseObject(Float.class, Helper.getRootFromString("<t>3.56</t>")));
         assertEquals(3L, objectParser.parseObject(Long.class, Helper.getRootFromString("<t>3</t>")));
         assertEquals(4, objectParser.parseObject(int.class, Helper.getRootFromString("<t>4</t>")));
+        assertEquals(4, objectParser.parseObject(int.class, Helper.getRootFromString("<t>4  </t>")));
         assertEquals(true, objectParser.parseObject(boolean.class, Helper.getRootFromString("<t>true</t>")));
 
         assertTrue('c' == objectParser.parseObject(char.class, Helper.getRootFromString("<t>c</t>")));
@@ -102,6 +103,30 @@ public class ObjectStringTransformerTest extends XvantageTester {
                 Helper.getRootFromString("<enclosing valueClass=\"long\"><value>2</value></enclosing>"));
         assertEquals(1, list.length);
         assertTrue(2L == list[0]);
+    }
+
+    @Test
+    public void testParseBitSet() throws Exception {
+        BitSet set = (BitSet) objectParser.parseObject(BitSet.class,
+                Helper.getRootFromString("<value>{0, 4, 7, 9}</value>"));
+        assertEquals(4, set.cardinality());
+        assertTrue(set.get(4));
+
+        set = (BitSet) objectParser.parseObject(BitSet.class,
+                Helper.getRootFromString("<value>{0, 4, 7, 9, }</value>"));
+        assertEquals(4, set.cardinality());
+        assertTrue(set.get(4));
+    }
+
+    @Test
+    public void testWriteBitSet() throws Exception {
+        BitSet set = new BitSet();
+        set.set(3);
+        set.set(4);
+        set.set(7);
+
+        objectParser.writeObjectAsProperty(set, BitSet.class, "set", transformerHandler);
+        assertEquals("<set>{3, 4, 7}</set>", writer.toString());
     }
 
     @Test

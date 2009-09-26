@@ -5,7 +5,6 @@ import de.pannous.xvantage.core.util.test.SimpleObj;
 import de.pannous.xvantage.core.util.test.ComplexObject;
 import de.pannous.xvantage.core.util.test.Person;
 import de.pannous.xvantage.core.util.test.Task;
-import de.pannous.xvantage.core.util.test.XvantageTester;
 import java.io.InputStream;
 import java.io.StringReader;
 import java.io.StringWriter;
@@ -161,42 +160,82 @@ public class XvantageTest extends XvantageTester {
         xv.setDefaultImplementation(List.class, LinkedList.class);
         assertEquals(LinkedList.class, xv.getDefaultImplementation(List.class));
     }
+    private String tmpResult1;
 
     @Test
     public void testWriteTwoRelatedObjects() {
         BiMap<Long, Person> pMap = dataPool.getData(Person.class);
 
-        Person p1 = new Person("p1");
-        Person p2 = new Person("p2");
+        Person p1 = new Person("p1", 1L);
+        Person p2 = new Person("p2", 2L);
         pMap.put(p1.getId(), p1);
         pMap.put(p2.getId(), p2);
 
         BiMap<Long, Task> tMap = dataPool.getData(Task.class);
-        Task t1 = new Task("t1");
-        Task t2 = new Task("t2");
+        Task t1 = new Task("t1", 1L);
         tMap.put(t1.getId(), t1);
-        tMap.put(t2.getId(), t2);
 
         // create many to many relation ship
         p1.getTasks().add(t1);
         t1.getPersons().add(p1);
 
-        p1.getTasks().add(t2);
-        t2.getPersons().add(p1);
+        p2.getTasks().add(t1);
+        t1.getPersons().add(p2);
+
+        xadv.mount("/root/", Person.class);
+        xadv.mount("/root/", Task.class);
+        tmpResult1 = xadv.saveObjects(dataPool, new StringWriter()).toString();
+
+        assertTrue(tmpResult1.contains(HEADER));
+        assertTrue(tmpResult1.contains("<tasks valueClass=\"de.pannous.xvantage.core.util.test.Task\">\n<value>1</value>\n</tasks>"));
+        assertTrue(tmpResult1.contains("<persons valueClass=\"de.pannous.xvantage.core.util.test.Person\">\n<value>1</value>\n<value>2</value>\n</persons>"));
+    }
+
+    @Test
+    public void testReadOutPutFromPreviousWrite() {
+        testWriteTwoRelatedObjects();
+        DataPool pool = xadv.readObjects(new StringReader(tmpResult1));
+        Person p1 = pool.getData(Person.class).get(1L);
+        assertEquals("p1", p1.getName());
+        assertNull(p1.getMainTask());
+        assertEquals(2L, pool.getData(Person.class).get(2L).getId());
+
+        assertEquals(1, p1.getTasks().size());
+
+        assertEquals(1, pool.getData(Task.class).size());
+        Task t1 = pool.getData(Task.class).values().iterator().next();
+        assertEquals("t1", t1.getName());
+        assertEquals(1, t1.getPersons().size());
+        assertEquals(p1, t1.getPersons().get(0));
+
+        assertEquals(t1, p1.getTasks().get(0));
+    }
+
+    @Test
+    public void testWriteTwoRelatedObjectsWithOneMount() {
+        BiMap<Long, Person> pMap = dataPool.getData(Person.class);
+
+        Person p1 = new Person("p1", 1L);
+        Person p2 = new Person("p2", 2L);
+        pMap.put(p1.getId(), p1);
+        pMap.put(p2.getId(), p2);
+
+        BiMap<Long, Task> tMap = dataPool.getData(Task.class);
+        Task t1 = new Task("t1", 1L);
+        tMap.put(t1.getId(), t1);
+
+        // create many to many relation ship
+        p1.getTasks().add(t1);
+        t1.getPersons().add(p1);
 
         p2.getTasks().add(t1);
         t1.getPersons().add(p2);
 
-        StringWriter writer = new StringWriter();
-
         xadv.mount("/root/", Person.class);
-        xadv.mount("/root/", Task.class);
+        String str = xadv.saveObjects(dataPool, new StringWriter()).toString();
 
-        xadv.saveObjects(dataPool, writer);
-        String result = writer.toString();
-        System.out.println(result);
-        assertTrue(result.contains(HEADER));
-        assertTrue(result.contains("<tasks valueClass=\"Task\">\n<value>0</value>\n</tasks>"));
-        assertTrue(result.contains("<persons valueClass=\"Person\">\n<value>0</value>\n</persons>"));
+        assertTrue(str.contains(HEADER));
+        assertTrue(str.contains("<tasks valueClass=\"de.pannous.xvantage.core.util.test.Task\">\n<value>1</value>\n</tasks>"));
+        assertFalse(str.contains("<persons valueClass=\"de.pannous.xvantage.core.util.test.Person\">\n<value>1</value>\n<value>2</value>\n</persons>"));
     }
 }

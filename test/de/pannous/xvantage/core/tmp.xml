@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<root>
+    <person>
+        <mainTask></mainTask>
+        <tasks valueClass="de.pannous.xvantage.core.util.test.Task">
+            <value>1</value>
+        </tasks>
+        <name>p2</name>
+        <id>2</id>
+    </person>
+    <person>
+        <mainTask></mainTask>
+        <tasks valueClass="de.pannous.xvantage.core.util.test.Task">
+            <value>1</value>
+        </tasks>
+        <name>p1</name>
+        <id>1</id>
+    </person>
+</root>
