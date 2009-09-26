@@ -1,0 +1,9 @@
+
+<person id="5">
+    <name>Tester</name>
+    <tasks valueClass="de.pannous.xvantage.core.util.test.Task">
+        <value>1</value>
+        <value>2</value>
+    </tasks>
+    <mainTask>4</mainTask>
+</person>    
