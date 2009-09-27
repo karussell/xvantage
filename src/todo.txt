@@ -1,14 +1,16 @@
+ * test writing with timefinder
+   - some elements too much !! ??
+   - instead <features valueClass="string"/> it should be no output ('null' collection)
+           <zip/> -> no output too
  * reading object with references fails -> getTask().add or addTask(Task)
+ * test reading with timefinder
  * even try heavy self circular references like so
    class Task { Task parentTask; List<Task> subTasks;}
- * deploy on maven2 repository
- * integrate in timefinder
-=> 1.0 alpha, beta, stable
+ *
+=> publish to "sf maven" as version=0.8
 
  * check before reading + after writing if xml is correct (against xsd)
  * what happens if there are different versions of classes?
    reading + removed java property => ignore xml element   
    reading + added java property   => init with default value or null
    for writing there is nothing to do
-
-=> 1.1 alpha, beta, stable

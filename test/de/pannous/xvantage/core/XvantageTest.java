@@ -15,7 +15,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import static org.junit.Assert.*;
@@ -36,14 +35,6 @@ public class XvantageTest extends XvantageTester {
     public void setUp() throws Exception {
         super.setUp();
         xadv = new Xvantage();
-    }
-
-    @After
-    public void shutdown() {
-        for (Exception ex : xadv.getExceptions()) {
-            ex.printStackTrace();
-        }
-        assertEquals("exceptions occured!", 0, xadv.getExceptions().size());
     }
 
     @Test
@@ -196,6 +187,7 @@ public class XvantageTest extends XvantageTester {
         testWriteTwoRelatedObjects();
         DataPool pool = xadv.readObjects(new StringReader(tmpResult1));
         Person p1 = pool.getData(Person.class).get(1L);
+        assertNotNull(p1);
         assertEquals("p1", p1.getName());
         assertNull(p1.getMainTask());
         assertEquals(2L, pool.getData(Person.class).get(2L).getId());

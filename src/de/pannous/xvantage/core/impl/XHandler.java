@@ -5,9 +5,6 @@ import de.pannous.xvantage.core.BindingLeaf;
 import de.pannous.xvantage.core.BindingTree;
 import de.pannous.xvantage.core.DataPool;
 import de.pannous.xvantage.core.ObjectStringTransformer;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 import org.xml.sax.Attributes;
 import org.xml.sax.helpers.DefaultHandler;
 
@@ -28,12 +25,10 @@ public class XHandler extends DefaultHandler {
      * in both trees. see test case testReadObjectsWithPathIncluded
      */
     private int mismatchInTree = 0;
-    private List<Exception> exceptions;
     private ObjectStringTransformer transformer;
 
-    public XHandler(ObjectStringTransformer tr, BindingTree bindingTree, List<Exception> exceptions) {
+    public XHandler(ObjectStringTransformer tr, BindingTree bindingTree) {
         transformer = tr;
-        this.exceptions = exceptions;
         currentLeaf = bindingTree.getRoot();
         if (currentLeaf == null)
             throw new NullPointerException("root == null is not supported");
@@ -80,7 +75,8 @@ public class XHandler extends DefaultHandler {
                 try {
                     transformer.parseObject(activeBinding, value);
                 } catch (Exception ex) {
-                    exceptions.add(ex);
+                    throw new UnsupportedOperationException("Couldn't parse:" +
+                            value + " (" + activeBinding + ")", ex);
                 }
 
                 activeBinding = null;

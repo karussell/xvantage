@@ -84,8 +84,7 @@ public class BindingTree {
         tmpRoot.mount(binding);
     }
 
-    public void saveObjects(List<Exception> exceptions,
-            DataPool pool,
+    public void saveObjects(DataPool pool,
             Writer writer,
             String encoding)
             throws SAXException, TransformerConfigurationException {
@@ -104,12 +103,11 @@ public class BindingTree {
         if (root == null)
             return;
 
-        processDoc(exceptions, pool, transformerHandler);
+        processDoc(pool, transformerHandler);
         transformerHandler.endDocument();
     }
 
-    private void processDoc(List<Exception> exceptions,
-            DataPool dataPool,
+    private void processDoc(DataPool dataPool,
             TransformerHandler transformerHandler)
             throws SAXException {
         BindingLeaf tmpRoot = root;
@@ -123,14 +121,15 @@ public class BindingTree {
 
         for (BindingLeaf leaf : tmpRoot.getChilds()) {
             for (Binding bind : leaf.getMountedBindings()) {
-                Map<Long, Object> tmpMap = dataPool.getData(bind.getClassObject()).getAll();
+                Map<Long, Object> tmpMap = dataPool.getData(bind.getClassObject());
                 if (tmpMap != null) {
 
                     for (Object oneObject : tmpMap.values()) {
                         try {
                             parser.writeObject(bind, oneObject, transformerHandler);
                         } catch (Exception ex) {
-                            exceptions.add(ex);
+                            throw new UnsupportedOperationException("Couldn't write object " +
+                                    oneObject + " (" + bind + ")", ex);
                         }
                     }
                 }
@@ -166,5 +165,9 @@ public class BindingTree {
 
     public Collection<Binding> getBindings() {
         return bindings.values();
+    }
+
+    public Binding getBinding(Class clazz) {
+        return bindings.get(clazz);
     }
 }

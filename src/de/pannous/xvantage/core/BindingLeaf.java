@@ -1,7 +1,3 @@
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
 package de.pannous.xvantage.core;
 
 import java.util.Collection;
@@ -9,6 +5,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
+ * A leaf in the DOM tree can have xml children and mounted bindings.
+ *
  * @author Peter Karich, peat_hal 'at' users 'dot' sourceforge 'dot' net
  */
 public class BindingLeaf {

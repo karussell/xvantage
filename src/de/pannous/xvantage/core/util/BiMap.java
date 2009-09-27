@@ -28,10 +28,6 @@ public class BiMap<V1, V2> implements Map<V1, V2> {
         return getV1.get(v2);
     }
 
-    public Map<V1, V2> getAll() {
-        return map;
-    }
-
     public Collection<V2> values() {
         return map.values();
     }

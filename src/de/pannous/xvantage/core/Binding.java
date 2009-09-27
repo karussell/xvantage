@@ -3,9 +3,14 @@ package de.pannous.xvantage.core;
 import de.pannous.xvantage.core.util.Helper;
 import java.lang.reflect.Method;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 /**
+ * Binds a path to a class, then it is possible to serialize several objects into
+ * this path.
+ *
  * @author Peter Karich, peat_hal 'at' users 'dot' sourceforge 'dot' net
  */
 public class Binding<T> {
@@ -15,11 +20,13 @@ public class Binding<T> {
     private Class<T> clazz;
     private Map<String, Method> getterMethods;
     private Map<String, Method> setterMethods;
+    private Set<String> ignoreMethods;
 
     public Binding(String pathAndElement, Class<T> clazz) {
         this.clazz = clazz;
         getterMethods = new HashMap();
         setterMethods = new HashMap();
+        ignoreMethods = new HashSet();
         for (Method method : clazz.getMethods()) {
 
             String xmlElement = Helper.getPropertyFromJavaMethod(method.getName(), method.getReturnType() == boolean.class);
@@ -85,6 +92,14 @@ public class Binding<T> {
 
     public void setSetterMethods(Map<String, Method> setterMethods) {
         this.setterMethods = setterMethods;
+    }
+
+    public void ignoreMethod(String method) {
+        ignoreMethods.add(method);
+    }
+
+    public boolean shouldIgnore(String name) {
+        return ignoreMethods.contains(name);
     }
 
     @Override

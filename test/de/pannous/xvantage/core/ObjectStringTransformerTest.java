@@ -257,4 +257,18 @@ public class ObjectStringTransformerTest extends XvantageTester {
         String str = writer.toString();
         assertEquals("<p>1</p>", str);
     }
+
+    @Test
+    public void testWriteObjectEvenIfGetterThrowsException() throws Exception {
+        Person p1 = new Person("p1", 1L) {
+
+            @Override
+            public String getName() {
+                throw new UnsupportedOperationException("test");
+            }
+        };
+        Binding bind = newBinding("/p/", Person.class);
+        objectParser.writeObject(bind, p1, transformerHandler);
+        assertEquals("<p><id>1</id></p>", writer.toString());
+    }
 }

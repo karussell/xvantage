@@ -11,7 +11,6 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.Writer;
 import java.lang.reflect.Constructor;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -27,7 +26,6 @@ public class Xvantage {
     private String encoding = "UTF-8";
     private ObjectStringTransformer transformer;
     private BindingTree bindingTree;
-    private List<Exception> exceptions = new ArrayList<Exception>();    
     private Class<? extends DataPool> defaultDataPool = DefaultDataPool.class;
 
     public Xvantage() {
@@ -43,7 +41,7 @@ public class Xvantage {
             Constructor<? extends DataPool> c = Helper.getPrivateConstructor(defaultDataPool);
             DataPool dataPool = c.newInstance();
             transformer.init(dataPool);
-            XHandler handler = new XHandler(transformer, bindingTree, exceptions);
+            XHandler handler = new XHandler(transformer, bindingTree);
             XMLReader xr = XMLReaderFactory.createXMLReader();
             xr.setContentHandler(handler);
             InputSource iSource = new InputSource(reader);
@@ -68,12 +66,12 @@ public class Xvantage {
     }
 
     /**
-     * @param pool should contain some objects you want to persist
+     * @param dataPool should contain some objects you want to persist
      */
     public Writer saveObjects(DataPool dataPool, Writer writer) {
         try {
             transformer.init(dataPool);
-            bindingTree.saveObjects(exceptions, dataPool, writer, encoding);
+            bindingTree.saveObjects(dataPool, writer, encoding);
             return writer;
         } catch (Exception ex) {
             throw new RuntimeException(ex);
@@ -114,6 +112,18 @@ public class Xvantage {
     }
 
     /**
+     * @return true if ignoring is possible
+     */
+    public boolean ignoreMethod(Class clazz, String method) {
+        Binding bind = bindingTree.getBinding(clazz);
+        if (bind != null) {
+            bind.ignoreMethod(method);
+            return true;
+        }
+        return false;
+    }
+
+    /**
      * @param interfc the interface which should trigger a new instance of specified clazz
      * @param clazz the implementation of specified interfc
      */
@@ -137,14 +147,6 @@ public class Xvantage {
             return (Class<? extends T>) transformer.getDefaultSetImpl();
         else
             throw new UnsupportedOperationException("Currently you can only set the default implementations for List, Map and Set");
-    }
-
-    /**
-     * @return a list of exceptions, which could occur while parsing or
-     * writing a single object.
-     */
-    public List<Exception> getExceptions() {
-        return exceptions;
     }
 
     public void setDefaultDataPool(Class<? extends DataPool> clazz) {

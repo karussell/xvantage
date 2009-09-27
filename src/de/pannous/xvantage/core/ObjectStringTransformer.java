@@ -33,9 +33,14 @@ import org.xml.sax.SAXException;
 import org.xml.sax.helpers.AttributesImpl;
 
 /**
- * This class transforms between primitive objects and string.
- * Additional support for some collection was provided.
- * Should be only once and then configured.
+ * This class transforms between objects (primitives, collections) and string.
+ * Support only for some collections were provided.
+ * The dataPool is necessary to get the id of a none primitive object as property.
+ * E.g. task1.persons Then several the ids of the persons of task1 will be necessary.
+ * Otherwise it will use an internal counter to keep track of those references.
+ * 
+ * An object should be created only once and then initialized with a new dataPool
+ * an every read/write.
  * 
  * @see Xvantage
  * @author Peter Karich, peat_hal 'at' users 'dot' sourceforge 'dot' net
@@ -143,6 +148,8 @@ public class ObjectStringTransformer {
             Method m = binding.getSetterMethods().get(node.getNodeName());
             if (m == null)
                 continue;
+            if(binding.shouldIgnore(m.getName()))
+                continue;
 
             Class tmpClazz = m.getParameterTypes()[0];
             m.invoke(obj, parseObject(tmpClazz, node));
@@ -152,27 +159,29 @@ public class ObjectStringTransformer {
     Object parseObject(Class tmpClazz, Node node) {
         Parsing parsing = getClassParsing(tmpClazz);
         if (parsing == null) {
+            Long id;
             try {
-                Long id = (Long) longParse.parse(node);
-                Map<Long, Object> map = dataPool.getData(tmpClazz);
-                Object obj = map.get(id);
-                if (obj == null) {
-                    try {
-                        Constructor c = Helper.getPrivateConstructor(tmpClazz);
-                        obj = c.newInstance();
-                    } catch (Exception ex) {
-                        try {
-                            obj = tmpClazz.newInstance();
-                        } catch (Exception ex2) {
-                            throw new UnsupportedOperationException("Couldn't call default constructor of " + tmpClazz, ex2);
-                        }
-                    }
-                    map.put(id, obj);
-                }
-                return obj;
+                id = (Long) longParse.parse(node);
             } catch (NumberFormatException ex) {
-                return null;
+                id = idCounter++;
             }
+            Map<Long, Object> map = dataPool.getData(tmpClazz);
+            Object obj = map.get(id);
+            if (obj == null) {
+                try {
+                    Constructor c = Helper.getPrivateConstructor(tmpClazz);
+                    obj = c.newInstance();
+                } catch (Exception ex) {
+                    try {
+                        obj = tmpClazz.newInstance();
+                    } catch (Exception ex2) {
+                        throw new UnsupportedOperationException("Couldn't call default constructor of " + tmpClazz, ex2);
+                    }
+                }
+                map.put(id, obj);
+            }
+            return obj;
+
         }
         return parsing.parse(node);
     }
@@ -244,6 +253,9 @@ public class ObjectStringTransformer {
         transformerHandler.startElement("", "", binding.getElementName(), atts);
 
         for (Entry<String, Method> tmpEntry : binding.getGetterMethods().entrySet()) {
+            if(binding.shouldIgnore(tmpEntry.getValue().getName()))
+                continue;
+            
             Object result = tmpEntry.getValue().invoke(oneObject);
             writeObjectAsProperty(result, tmpEntry.getValue().getReturnType(), tmpEntry.getKey(), transformerHandler);
         }
@@ -255,7 +267,8 @@ public class ObjectStringTransformer {
      * This method writes the specified object to the transformerHandler as property.
      * It will only write its id if object is not a primitive nor a collection.
      *
-     * @see writeObject which writes the object with all of its properties
+     * This is different to writeObject, which writes the object with all of its properties.
+     * @see #writeObject(de.pannous.xvantage.core.Binding, java.lang.Object, javax.xml.transform.sax.TransformerHandler)
      *
      * @param object the object to be saved
      * @param clazz is necessary to check if the object should be serialized as collections
