@@ -37,9 +37,19 @@ public class Xvantage {
      * @return readed objects, or empty if no objects found
      */
     public DataPool readObjects(Reader reader) {
+        return readObjects(reader, null);
+    }
+
+    public DataPool readObjects(Reader reader, DataPool dataPool) {
+        if (reader == null)
+            throw new NullPointerException("Reader cannot be null!");
+
         try {
-            Constructor<? extends DataPool> c = Helper.getPrivateConstructor(defaultDataPool);
-            DataPool dataPool = c.newInstance();
+            if (dataPool == null) {
+                Constructor<? extends DataPool> c = Helper.getPrivateConstructor(defaultDataPool);
+                dataPool = c.newInstance();
+            }
+
             transformer.init(dataPool);
             XHandler handler = new XHandler(transformer, bindingTree);
             XMLReader xr = XMLReaderFactory.createXMLReader();
@@ -58,8 +68,12 @@ public class Xvantage {
      * @return readed objects, or empty if no objects found
      */
     public DataPool readObjects(InputStream iStream) {
+        return readObjects(iStream, null);
+    }
+
+    public DataPool readObjects(InputStream iStream, DataPool pool) {
         try {
-            return readObjects(new InputStreamReader(iStream, "UTF-8"));
+            return readObjects(new InputStreamReader(iStream, "UTF-8"), pool);
         } catch (Exception ex) {
             throw new RuntimeException(ex);
         }

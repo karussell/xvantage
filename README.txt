@@ -62,7 +62,7 @@ there are a lot, because it is a young idea ;-)
 There are X, because of the X in xvantage ;-)
 
  * easy xml (de-)serialization (is not really about binding ...)
- * small library (<50KB) without dependencies
+ * small library <50KB without dependencies (Sept 2009 => even 35KB)
  * allowed cross references!
    even between documents (you could read/write from/to multiple files)
  * well tested

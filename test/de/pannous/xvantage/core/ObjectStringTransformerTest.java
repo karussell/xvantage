@@ -150,6 +150,9 @@ public class ObjectStringTransformerTest extends XvantageTester {
         assertEquals("test1", owc.getStringMap().get(1));
         assertNotNull(owc.getStringArray());
         assertEquals("str1", owc.getStringArray()[0]);
+
+        assertEquals(1, owc.getStringCollection().size());
+        assertEquals("str2", owc.getStringCollection().iterator().next());
     }
 
     @Test

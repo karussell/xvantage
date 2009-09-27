@@ -175,7 +175,7 @@ public class ObjectStringTransformer {
                         try {
                             obj = tmpClazz.newInstance();
                         } catch (Exception ex2) {
-                            throw new UnsupportedOperationException("Couldn't call default constructor of " + tmpClazz, ex2);
+                            throw new UnsupportedOperationException("Couldn't call default constructor of " + tmpClazz + " node:" + node.getTextContent(), ex2);
                         }
                     }
                     map.put(id, obj);
@@ -387,6 +387,8 @@ public class ObjectStringTransformer {
             } else if (tmpClazz.isArray()) {
                 arrayParse.setComponentType(tmpClazz.getComponentType());
                 parsing = arrayParse;
+            } else if (Collection.class.isAssignableFrom(tmpClazz)) {
+                parsing = listParse;
             }
             // else unknown class => no collection/primitive
         }

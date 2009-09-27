@@ -24,4 +24,7 @@
     <stringArray valueClass="String">
         <value>str1</value>
     </stringArray>
+    <stringCollection valueClass="String">
+        <value>str2</value>
+    </stringCollection>
 </obj>

@@ -1,5 +1,7 @@
 package de.pannous.xvantage.core.util.test;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -15,6 +17,7 @@ public class ObjectWithCollections {
     private Map<Integer, String> stringMap = new HashMap<Integer, String>();
     private Long id;
     private String stringArray[] = {"str1", "str2"};
+    private Collection<String> stringCollection = new ArrayList<String>();
 
     private ObjectWithCollections() {
     }
@@ -61,6 +64,14 @@ public class ObjectWithCollections {
 
     public void setStringArray(String[] stringArray) {
         this.stringArray = stringArray;
+    }
+
+    public Collection<String> getStringCollection() {
+        return stringCollection;
+    }
+
+    public void setStringCollection(Collection<String> stringCollection) {
+        this.stringCollection = stringCollection;
     }
 
     @Override
