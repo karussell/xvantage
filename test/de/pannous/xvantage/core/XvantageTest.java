@@ -110,6 +110,7 @@ public class XvantageTest extends XvantageTester {
                 "<myobject>\n<name>test</name>\n</myobject>\n" +
                 "</path>\n";
 
+        System.out.println(writer.toString());
         assertEquals(expected, writer.toString());
     }
 

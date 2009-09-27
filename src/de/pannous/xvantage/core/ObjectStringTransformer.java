@@ -280,12 +280,10 @@ public class ObjectStringTransformer {
             String elementName, TransformerHandler transformerHandler) throws SAXException {
 
         atts.clear();
-
         if (clazz.isArray()) {
             Object[] array = (Object[]) object;
             int size = array.length;
-            if (size == 0) {
-                atts.addAttribute("", "", valueClassStr, "", getAliasFromClass(String.class));
+            if (size == 0) {                
                 transformerHandler.startElement("", "", elementName, atts);
             } else {
                 boolean firstEntry = true;
@@ -301,7 +299,6 @@ public class ObjectStringTransformer {
         } else if (Collection.class.isAssignableFrom(clazz)) {
             int size = ((Collection) object).size();
             if (size == 0) {
-                atts.addAttribute("", "", valueClassStr, "", getAliasFromClass(String.class));
                 transformerHandler.startElement("", "", elementName, atts);
             } else {
                 boolean firstEntry = true;
@@ -317,7 +314,6 @@ public class ObjectStringTransformer {
         } else if (Map.class.isAssignableFrom(clazz)) {
             Map map = (Map) object;
             if (map.size() == 0) {
-                atts.addAttribute("", "", valueClassStr, "", getAliasFromClass(String.class));
                 transformerHandler.startElement("", "", elementName, atts);
             } else {
                 boolean firstEntry = true;

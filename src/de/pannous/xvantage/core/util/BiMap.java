@@ -59,8 +59,11 @@ public class BiMap<V1, V2> implements Map<V1, V2> {
         return val;
     }
 
-    public void putAll(Map<? extends V1, ? extends V2> t) {
-        throw new UnsupportedOperationException("Not supported yet.");
+    public void putAll(Map<? extends V1, ? extends V2> externMap) {
+        for (Entry<? extends V1, ? extends V2> entry : externMap.entrySet()) {
+            map.put(entry.getKey(), entry.getValue());
+            getV1.put(entry.getValue(), entry.getKey());
+        }
     }
 
     public void clear() {
@@ -74,5 +77,10 @@ public class BiMap<V1, V2> implements Map<V1, V2> {
 
     public Set<Entry<V1, V2>> entrySet() {
         return map.entrySet();
+    }
+
+    @Override
+    public String toString() {
+        return map.toString();
     }
 }

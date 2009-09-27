@@ -163,8 +163,16 @@ public class ObjectStringTransformerTest extends XvantageTester {
         String str = Helper.getAsString(iStream, 1024);
         Entry<Long, ObjectWithCollections> res = objectParser.parseObject(bind, str);
         ObjectWithCollections owc = res.getValue();
+        assertEquals(0, owc.getStringSet().size());
         assertEquals(0, owc.getStringMap().size());
-        assertEquals(0, owc.getStringMap().size());
+    }
+
+    @Test
+    public void testWriteObjectWithEmptyCollection() throws Exception {
+        ArrayList al = new ArrayList();
+
+        objectParser.writeObjectAsProperty(al, ArrayList.class, "list", transformerHandler);
+        assertEquals("<list/>", writer.toString());
     }
 
     @Test
@@ -268,7 +276,8 @@ public class ObjectStringTransformerTest extends XvantageTester {
             }
         };
         Binding bind = newBinding("/p/", Person.class);
+        bind.ignoreMethod("getName");
         objectParser.writeObject(bind, p1, transformerHandler);
-        assertEquals("<p><id>1</id></p>", writer.toString());
+        assertEquals("<person><mainTask></mainTask><tasks/><id>1</id></person>", writer.toString());
     }
 }

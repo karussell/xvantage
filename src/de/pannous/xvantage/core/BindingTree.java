@@ -107,52 +107,39 @@ public class BindingTree {
         transformerHandler.endDocument();
     }
 
-    private void processDoc(DataPool dataPool,
-            TransformerHandler transformerHandler)
+    private void processDoc(DataPool dataPool, TransformerHandler transformerHandler)
             throws SAXException {
-        BindingLeaf tmpRoot = root;
-        BindingLeaf currentLeaf = null;
-        AttributesImpl atts = new AttributesImpl();
 
         if (root.getMountedBindings().size() >= 1)
             throw new UnsupportedOperationException("You cannot mount an object as root. Currently not supported. (More than one will never be supported)");
 
-        transformerHandler.startElement("", "", root.getName(), atts);
+        processNode(root, dataPool, transformerHandler);
+    }
+    private AttributesImpl atts = new AttributesImpl();
 
-        for (BindingLeaf leaf : tmpRoot.getChilds()) {
-            for (Binding bind : leaf.getMountedBindings()) {
-                Map<Long, Object> tmpMap = dataPool.getData(bind.getClassObject());
-                if (tmpMap != null) {
+    private void processNode(BindingLeaf rootLeaf, DataPool dataPool, TransformerHandler transformerHandler) throws SAXException {
 
-                    for (Object oneObject : tmpMap.values()) {
-                        try {
-                            parser.writeObject(bind, oneObject, transformerHandler);
-                        } catch (Exception ex) {
-                            throw new UnsupportedOperationException("Couldn't write object " +
-                                    oneObject + " (" + bind + ")", ex);
-                        }
+        for (Binding bind : rootLeaf.getMountedBindings()) {
+            Map<Long, Object> tmpMap = dataPool.getData(bind.getClassObject());
+            if (tmpMap != null) {
+                for (Object oneObject : tmpMap.values()) {
+                    try {
+                        parser.writeObject(bind, oneObject, transformerHandler);
+                    } catch (Exception ex) {
+                        throw new UnsupportedOperationException("Couldn't write object " +
+                                oneObject + " (" + bind + ")", ex);
                     }
                 }
             }
-
-            // do not write again
-            if (tmpRoot != root)
-                transformerHandler.startElement("", "", tmpRoot.getName(), atts);
-
-            // increase stage
-            currentLeaf = tmpRoot;
-            tmpRoot = leaf;
         }
+        if (rootLeaf.getChilds().size() == 0)
+            return;
 
-        if (currentLeaf != null) {
-            while (root != currentLeaf) {
-                transformerHandler.endElement("", "", currentLeaf.getName());
-                // decrease stage
-                currentLeaf = currentLeaf.getParent();
-            }
+        transformerHandler.startElement("", "", rootLeaf.getName(), atts);
+        for (BindingLeaf leaf : rootLeaf.getChilds()) {
+            processNode(leaf, dataPool, transformerHandler);
         }
-
-        transformerHandler.endElement("", "", root.getName());
+        transformerHandler.endElement("", "", rootLeaf.getName());
     }
 
     public int getMaxLevel() {
