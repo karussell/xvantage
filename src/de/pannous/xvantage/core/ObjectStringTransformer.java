@@ -120,15 +120,16 @@ public class ObjectStringTransformer {
             id = idCounter++;
         }
         T obj = objects.get(id);
-        if (obj != null)
-            throw new UnsupportedOperationException("Duplicate ids detected: " + id);
 
-        Constructor c = Helper.getPrivateConstructor(clazz);
-        if (c == null)
-            throw new IllegalAccessException("Cannot access constructor of " + clazz);
+        if (obj == null) {
+            // object was already earlier referenced (TODO how to detect duplicate ids?)
+            Constructor c = Helper.getPrivateConstructor(clazz);
+            if (c == null)
+                throw new IllegalAccessException("Cannot access constructor of " + clazz);
 
-        obj = (T) c.newInstance();
-        objects.put(id, obj);
+            obj = (T) c.newInstance();
+            objects.put(id, obj);
+        }
 
         fillWithProperties(binding, obj, firstElement.getChildNodes());
         return new MapEntry<Long, T>(id, obj);
@@ -148,39 +149,42 @@ public class ObjectStringTransformer {
             Method m = binding.getSetterMethods().get(node.getNodeName());
             if (m == null)
                 continue;
-            if(binding.shouldIgnore(m.getName()))
+            if (binding.shouldIgnore(m.getName()))
                 continue;
 
             Class tmpClazz = m.getParameterTypes()[0];
-            m.invoke(obj, parseObject(tmpClazz, node));
+            m.invoke(obj, parseObjectAsProperty(tmpClazz, node));
         }
     }
 
-    Object parseObject(Class tmpClazz, Node node) {
+    Object parseObjectAsProperty(Class tmpClazz, Node node) {
         Parsing parsing = getClassParsing(tmpClazz);
         if (parsing == null) {
+            // in the case no collection or no primitive type was found we use a reference
+            // example <mainTask>1</mainTask>
             Long id;
             try {
                 id = (Long) longParse.parse(node);
-            } catch (NumberFormatException ex) {
-                id = idCounter++;
-            }
-            Map<Long, Object> map = dataPool.getData(tmpClazz);
-            Object obj = map.get(id);
-            if (obj == null) {
-                try {
-                    Constructor c = Helper.getPrivateConstructor(tmpClazz);
-                    obj = c.newInstance();
-                } catch (Exception ex) {
+                Map<Long, Object> map = dataPool.getData(tmpClazz);
+                Object obj = map.get(id);
+                if (obj == null) {
                     try {
-                        obj = tmpClazz.newInstance();
-                    } catch (Exception ex2) {
-                        throw new UnsupportedOperationException("Couldn't call default constructor of " + tmpClazz, ex2);
+                        Constructor c = Helper.getPrivateConstructor(tmpClazz);
+                        obj = c.newInstance();
+                    } catch (Exception ex) {
+                        try {
+                            obj = tmpClazz.newInstance();
+                        } catch (Exception ex2) {
+                            throw new UnsupportedOperationException("Couldn't call default constructor of " + tmpClazz, ex2);
+                        }
                     }
+                    map.put(id, obj);
                 }
-                map.put(id, obj);
+                return obj;
+            } catch (NumberFormatException ex) {
+                return null;
             }
-            return obj;
+
 
         }
         return parsing.parse(node);
@@ -198,7 +202,7 @@ public class ObjectStringTransformer {
             for (int ii = 0; ii < list.getLength(); ii++) {
                 Node tmpNode = list.item(ii);
                 if (tmpNode.getNodeType() == Node.ELEMENT_NODE)
-                    coll.add(parseObject(valueType, tmpNode));
+                    coll.add(parseObjectAsProperty(valueType, tmpNode));
             }
         } catch (Exception ex) {
             throw new RuntimeException(ex);
@@ -241,7 +245,7 @@ public class ObjectStringTransformer {
                 }
 
                 if (valueNode != null && keyNode != null)
-                    map.put(parseObject(keyType, keyNode), parseObject(valueType, valueNode));
+                    map.put(parseObjectAsProperty(keyType, keyNode), parseObjectAsProperty(valueType, valueNode));
             }
 
         } catch (Exception ex) {
@@ -250,12 +254,17 @@ public class ObjectStringTransformer {
     }
 
     public <T> void writeObject(Binding<T> binding, T oneObject, TransformerHandler transformerHandler) throws Exception {
-        transformerHandler.startElement("", "", binding.getElementName(), atts);
+        BiMap<Long, T> map = dataPool.getData(binding.getClassObject());
+        Long id = map.getSecond(oneObject);
+        if (id != null)
+            atts.addAttribute("", "", "id", "", Long.toString(id));
 
+        transformerHandler.startElement("", "", binding.getElementName(), atts);
+        atts.clear();
         for (Entry<String, Method> tmpEntry : binding.getGetterMethods().entrySet()) {
-            if(binding.shouldIgnore(tmpEntry.getValue().getName()))
+            if (binding.shouldIgnore(tmpEntry.getValue().getName()))
                 continue;
-            
+
             Object result = tmpEntry.getValue().invoke(oneObject);
             writeObjectAsProperty(result, tmpEntry.getValue().getReturnType(), tmpEntry.getKey(), transformerHandler);
         }
@@ -283,7 +292,7 @@ public class ObjectStringTransformer {
         if (clazz.isArray()) {
             Object[] array = (Object[]) object;
             int size = array.length;
-            if (size == 0) {                
+            if (size == 0) {
                 transformerHandler.startElement("", "", elementName, atts);
             } else {
                 boolean firstEntry = true;

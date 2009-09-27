@@ -1,7 +1,3 @@
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
 package de.pannous.xvantage.core;
 
 import de.pannous.xvantage.core.util.BiMap;
@@ -65,20 +61,20 @@ public class ObjectStringTransformerTest extends XvantageTester {
 
     @Test
     public void testParse() throws Exception {
-        assertEquals(3.56f, objectParser.parseObject(Float.class, Helper.getRootFromString("<t>3.56</t>")));
-        assertEquals(3L, objectParser.parseObject(Long.class, Helper.getRootFromString("<t>3</t>")));
-        assertEquals(4, objectParser.parseObject(int.class, Helper.getRootFromString("<t>4</t>")));
-        assertEquals(4, objectParser.parseObject(int.class, Helper.getRootFromString("<t>4  </t>")));
-        assertEquals(true, objectParser.parseObject(boolean.class, Helper.getRootFromString("<t>true</t>")));
+        assertEquals(3.56f, objectParser.parseObjectAsProperty(Float.class, Helper.getRootFromString("<t>3.56</t>")));
+        assertEquals(3L, objectParser.parseObjectAsProperty(Long.class, Helper.getRootFromString("<t>3</t>")));
+        assertEquals(4, objectParser.parseObjectAsProperty(int.class, Helper.getRootFromString("<t>4</t>")));
+        assertEquals(4, objectParser.parseObjectAsProperty(int.class, Helper.getRootFromString("<t>4  </t>")));
+        assertEquals(true, objectParser.parseObjectAsProperty(boolean.class, Helper.getRootFromString("<t>true</t>")));
 
-        assertTrue('c' == objectParser.parseObject(char.class, Helper.getRootFromString("<t>c</t>")));
-        assertEquals("", objectParser.parseObject(char.class, Helper.getRootFromString("<t></t>")));
-        assertEquals("", objectParser.parseObject(char.class, Helper.getRootFromString("<t/>")));
+        assertTrue('c' == objectParser.parseObjectAsProperty(char.class, Helper.getRootFromString("<t>c</t>")));
+        assertEquals("", objectParser.parseObjectAsProperty(char.class, Helper.getRootFromString("<t></t>")));
+        assertEquals("", objectParser.parseObjectAsProperty(char.class, Helper.getRootFromString("<t/>")));
     }
 
     @Test
     public void testParseCollections() throws Exception {
-        List list = (List) objectParser.parseObject(ArrayList.class,
+        List list = (List) objectParser.parseObjectAsProperty(ArrayList.class,
                 Helper.getRootFromString("<enclosing valueClass=\"String\"><value>1</value><value>2</value></enclosing>"));
         assertEquals(2, list.size());
         assertEquals("1", list.get(0));
@@ -87,7 +83,7 @@ public class ObjectStringTransformerTest extends XvantageTester {
 
     @Test
     public void testParseMap() throws Exception {
-        Map map = (HashMap) objectParser.parseObject(HashMap.class,
+        Map map = (HashMap) objectParser.parseObjectAsProperty(HashMap.class,
                 Helper.getRootFromString("<stringMap keyClass=\"Integer\" valueClass=\"String\">" +
                 "<entry>            <key>1</key>            <value>test1</value>        </entry>" +
                 "<entry>            <key>2</key>            <value>test2</value>        </entry>" +
@@ -99,7 +95,7 @@ public class ObjectStringTransformerTest extends XvantageTester {
 
     @Test
     public void testParseArray() throws Exception {
-        Long[] list = (Long[]) objectParser.parseObject(Long[].class,
+        Long[] list = (Long[]) objectParser.parseObjectAsProperty(Long[].class,
                 Helper.getRootFromString("<enclosing valueClass=\"long\"><value>2</value></enclosing>"));
         assertEquals(1, list.length);
         assertTrue(2L == list[0]);
@@ -107,12 +103,12 @@ public class ObjectStringTransformerTest extends XvantageTester {
 
     @Test
     public void testParseBitSet() throws Exception {
-        BitSet set = (BitSet) objectParser.parseObject(BitSet.class,
+        BitSet set = (BitSet) objectParser.parseObjectAsProperty(BitSet.class,
                 Helper.getRootFromString("<value>{0, 4, 7, 9}</value>"));
         assertEquals(4, set.cardinality());
         assertTrue(set.get(4));
 
-        set = (BitSet) objectParser.parseObject(BitSet.class,
+        set = (BitSet) objectParser.parseObjectAsProperty(BitSet.class,
                 Helper.getRootFromString("<value>{0, 4, 7, 9, }</value>"));
         assertEquals(4, set.cardinality());
         assertTrue(set.get(4));
@@ -131,14 +127,14 @@ public class ObjectStringTransformerTest extends XvantageTester {
 
     @Test
     public void testDoNotParseWithoutValueclassAttribute_ButDoNotThrowAnException() throws Exception {
-        List list = (List) objectParser.parseObject(ArrayList.class,
+        List list = (List) objectParser.parseObjectAsProperty(ArrayList.class,
                 Helper.getRootFromString("<enclosing><value>2</value></enclosing>"));
         assertEquals(0, list.size());
     }
 
     @Test
     public void testParseNonePrimitiveObjectWithoutException() throws Exception {
-        SimpleObj obj = (SimpleObj) objectParser.parseObject(SimpleObj.class,
+        SimpleObj obj = (SimpleObj) objectParser.parseObjectAsProperty(SimpleObj.class,
                 Helper.getRootFromString("<obj id=\"5\"><value>2</value></obj>"));
         assertNotNull(obj);
     }
@@ -277,7 +273,8 @@ public class ObjectStringTransformerTest extends XvantageTester {
         };
         Binding bind = newBinding("/p/", Person.class);
         bind.ignoreMethod("getName");
+        dataPool.getData(Person.class).put(p1.getId(), p1);
         objectParser.writeObject(bind, p1, transformerHandler);
-        assertEquals("<person><mainTask></mainTask><tasks/><id>1</id></person>", writer.toString());
+        assertEquals("<person id=\"1\"><mainTask></mainTask><tasks/><id>1</id></person>", writer.toString());
     }
 }

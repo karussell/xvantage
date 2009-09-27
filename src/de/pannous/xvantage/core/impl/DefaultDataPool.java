@@ -27,5 +27,10 @@ public class DefaultDataPool implements DataPool {
         }
         return (BiMap<Long, T>) map;
     }
+
+    @Override
+    public String toString() {
+        return objects.toString();
+    }
 }
 

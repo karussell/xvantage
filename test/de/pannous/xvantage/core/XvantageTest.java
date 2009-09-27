@@ -107,10 +107,9 @@ public class XvantageTest extends XvantageTester {
 
         String expected = HEADER +
                 "<path>\n" +
-                "<myobject>\n<name>test</name>\n</myobject>\n" +
+                "<myobject id=\"0\">\n<name>test</name>\n</myobject>\n" +
                 "</path>\n";
 
-        System.out.println(writer.toString());
         assertEquals(expected, writer.toString());
     }
 
@@ -136,8 +135,8 @@ public class XvantageTest extends XvantageTester {
         String result = writer.toString();
 
         assertTrue(result.contains(HEADER));
-        assertTrue(result.contains("<myobject>\n<name>test2</name>\n</myobject>\n"));
-        assertTrue(result.contains("<myobject>\n<name>test</name>\n</myobject>\n"));
+        assertTrue(result.contains("<myobject id=\"1\">\n<name>test2</name>\n</myobject>\n"));
+        assertTrue(result.contains("<myobject id=\"0\">\n<name>test</name>\n</myobject>\n"));
     }
 
     @Test
@@ -179,6 +178,8 @@ public class XvantageTest extends XvantageTester {
         tmpResult1 = xadv.saveObjects(dataPool, new StringWriter()).toString();
 
         assertTrue(tmpResult1.contains(HEADER));
+        assertTrue(tmpResult1.contains("<person id=\"2\">"));
+        assertTrue(tmpResult1.contains("<person id=\"1\">"));
         assertTrue(tmpResult1.contains("<tasks valueClass=\"de.pannous.xvantage.core.util.test.Task\">\n<value>1</value>\n</tasks>"));
         assertTrue(tmpResult1.contains("<persons valueClass=\"de.pannous.xvantage.core.util.test.Person\">\n<value>1</value>\n<value>2</value>\n</persons>"));
     }
@@ -186,6 +187,7 @@ public class XvantageTest extends XvantageTester {
     @Test
     public void testReadOutPutFromPreviousWrite() {
         testWriteTwoRelatedObjects();
+        System.out.println(tmpResult1);
         DataPool pool = xadv.readObjects(new StringReader(tmpResult1));
         Person p1 = pool.getData(Person.class).get(1L);
         assertNotNull(p1);
@@ -198,7 +200,7 @@ public class XvantageTest extends XvantageTester {
         assertEquals(1, pool.getData(Task.class).size());
         Task t1 = pool.getData(Task.class).values().iterator().next();
         assertEquals("t1", t1.getName());
-        assertEquals(1, t1.getPersons().size());
+        assertEquals(2, t1.getPersons().size());
         assertEquals(p1, t1.getPersons().get(0));
 
         assertEquals(t1, p1.getTasks().get(0));

@@ -5,51 +5,56 @@ Please give your feedback to peathal@yaaahoooo.com (some a and o too much ;-))
 
 Xvantage is yet another xml serializer and deserializer without much configuration
 hassle. It is well suited if you have java objects and want to serialize them
-into xml. This is possible without regenerating your xsd files on every class
-change. See more advantages in the "Advantage" section below.
+into xml and read this xml back. Writing and reading is possible without
+regenerating your xsd files every time you change your classes.
+See more advantages in the "Advantage" section below.
 
 Now just look at the code snippets and give xvantage a try!
 + Clone this repository and add your test case to improve the stability!
 
-  Reading
-===============
+For an up to date example please look into the source at test/de.pannous.xvantage.core.XvantageTest.java
 
-StringReader iStream = new StringReader(
-    "<path>" +
-    "   <myobject><name>test</name></myobject>" +
-    "</path>");
-
-// mount to /path/ with an alternative name 'myobject' instead of the default (simpleObj)
-xadv.mount("/path/myobject", SimpleObj.class);
-// now get the objects from the DataPool
-DataPool pool = xadv.readObjects(iStream);
-SimpleObj obj = pool.getData(SimpleObj.class).values().iterator().next();
-assertEquals("test", obj.getName());
 
   Writing
-===============
+===========
 
-// create a data pool with your objects
+// Create a data pool with all your objects you want to serialize
 DataPool pool = new DefaultDataPool();
 Map<Long, SimpleObj> map = pool.getData(SimpleObj.class);
 map.put(0L, new SimpleObj("test"));
 StringWriter writer = new StringWriter();
-// mount to /path/
 xadv.mount("/path/", SimpleObj.class);
 xadv.saveObjects(pool, writer);
-// now look into writer.toString() for the created xml, which should look like
+// Now look into writer.toString() for the created xml, which should look like
 // the xml above in the iStream declaration
+
+
+  Reading
+===========
+
+// get xml from somewhere
+StringReader iStream = new StringReader(
+    "<path>" +
+    "   <myobject><name>test</name></myobject>" +
+    "</path>");
+// mount to /path/ with an alternative name 'myobject' instead of the default which would be simpleObj
+xadv.mount("/path/myobject", SimpleObj.class);
+DataPool pool = xadv.readObjects(iStream);
+SimpleObj obj = pool.getData(SimpleObj.class).values().iterator().next();
+assertEquals("test", obj.getName());
+
 
   Disadvantages
 =================
 
 there are a lot, because it is a young idea ;-)
 
- * not so powerful like JAXB and all the others,
-    see this post for more information http://karussell.wordpress.com/2009/09/03/xml-serializers-for-java/
+ * not so powerful and configurable like JAXB and all the others,
+   see this post for more information http://karussell.wordpress.com/2009/09/03/xml-serializers-for-java/
  * maybe not so fast
  * maybe not so stable like all the others
- * is not thread save, you have to use multiple instances of the Xvantage class
+ * not thread save, you have to use multiple instances of Xvantage
+
 
   Advantages
 ==============
@@ -63,9 +68,15 @@ There are X, because of the X in xvantage ;-)
  * well tested
  * no checked exceptions
  * xml could be checked via xsd (but no must)
+ * no license and free source code (public domain!)
+
+  License
+===========
+
+Public Domain, see http://en.wikipedia.org/wiki/Public_domain
 
   Xvantage compared to ...
-==============================
+============================
 
  * compared to xstream or XmlEncode, you have additional mount calls in xvantage,
    but the resulting xml could be checked via xsd!
@@ -76,11 +87,13 @@ There are X, because of the X in xvantage ;-)
  * compared to apache digester, you can read and *write* and you don't have so much
    java configuration hassle (only one 'mount' call with xvantage)
 
+
   Use cases
 =============
 
 I will use it in my timefinder.de project to save/read objects to/from xml
 ... so xml as one additional datasource.
+
 
   Hints
 =========

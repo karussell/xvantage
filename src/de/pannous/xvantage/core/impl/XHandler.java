@@ -56,6 +56,13 @@ public class XHandler extends DefaultHandler {
         if (activeBinding != null) {
             sbForOneElement.append('<');
             sbForOneElement.append(qName);
+            for (int ii = 0; ii < attr.getLength(); ii++) {
+                sbForOneElement.append(" ");
+                sbForOneElement.append(attr.getQName(ii));
+                sbForOneElement.append("=\"");
+                sbForOneElement.append(attr.getValue(ii));
+                sbForOneElement.append("\"");
+            }
             sbForOneElement.append('>');
         }
     }

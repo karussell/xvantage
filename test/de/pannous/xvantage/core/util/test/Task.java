@@ -65,4 +65,9 @@ public class Task {
     public void setPersons(List<Person> persons) {
         this.persons = persons;
     }
+
+    @Override
+    public String toString() {
+        return "name:" + getName() + " id:" + getId();
+    }
 }
