@@ -104,7 +104,7 @@ public class XvantageTest extends XvantageTester {
         StringWriter writer = new StringWriter();
         xadv.mount("/path/myobject", SimpleObj.class);
         xadv.saveObjects(writer, dataPool);
-
+//        System.out.println(writer.toString());
         String expected = HEADER +
                 "<path>\n" +
                 "<myobject id=\"0\">\n<name>test</name>\n</myobject>\n" +

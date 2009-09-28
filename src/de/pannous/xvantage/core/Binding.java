@@ -23,6 +23,9 @@ public class Binding<T> {
     private Set<String> ignoreMethods;
 
     public Binding(String pathAndElement, Class<T> clazz) {
+        if (clazz == null)
+            throw new NullPointerException("Clazz cannot be null to create a binding: " + pathAndElement);
+
         this.clazz = clazz;
         getterMethods = new HashMap();
         setterMethods = new HashMap();
@@ -42,20 +45,22 @@ public class Binding<T> {
             }
         }
 
-        if (!pathAndElement.startsWith("/"))
-            pathAndElement = "/" + pathAndElement;
+        if (pathAndElement != null) {
+            if (!pathAndElement.startsWith("/"))
+                pathAndElement = "/" + pathAndElement;
 
-        int lastIndex = pathAndElement.lastIndexOf('/');
-        if (lastIndex < 0) {
-            throw new IllegalStateException("Cannot happen");
+            int lastIndex = pathAndElement.lastIndexOf('/');
+            if (lastIndex < 0) {
+                throw new IllegalStateException("Cannot happen");
+            }
+
+            elementName = pathAndElement.substring(lastIndex + 1).trim();
+            pathName = pathAndElement.substring(0, lastIndex + 1);
         }
 
-        elementName = pathAndElement.substring(lastIndex + 1).trim();
-        if (elementName.length() == 0) {
+        if (elementName == null || elementName.length() == 0) {
             elementName = Helper.getJavaModifier(clazz.getSimpleName());
         }
-
-        pathName = pathAndElement.substring(0, lastIndex + 1);
     }
 
     public String getElementName() {

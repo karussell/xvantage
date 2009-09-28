@@ -1,23 +1,28 @@
 package de.pannous.xvantage.core;
 
 import de.pannous.xvantage.core.impl.DefaultDataPool;
+import de.pannous.xvantage.core.parsing.ObjectParsing;
+import de.pannous.xvantage.core.writing.ObjectWriting;
 
 /**
  * @author Peter Karich, peat_hal 'at' users 'dot' sourceforge 'dot' net
  */
 public class XvantageTester {
 
-    protected ObjectStringTransformer objectParser;
+    protected ObjectWriting writing;
+    protected ObjectParsing parsing;
     protected DataPool dataPool;
     protected BindingTree bindingTree;
 
     public void setUp() throws Exception {
-        objectParser = new ObjectStringTransformer();
-        bindingTree = new BindingTree(objectParser);
+        writing = new ObjectWriting();
+        parsing = new ObjectParsing();
+        bindingTree = new BindingTree(writing);
 
-        // reconfigure objectParser for every new Xvantage.readObjects call
+        // reconfigure writing for every new Xvantage.readObjects call
         dataPool = new DefaultDataPool();
-        objectParser.init(dataPool);
+        writing.init(dataPool);
+        parsing.init(dataPool);
     }
 
     protected <T> Binding<T> newBinding(String string, Class<T> aClass) {

@@ -1,6 +1,9 @@
-package de.pannous.xvantage.core;
+package de.pannous.xvantage.core.parsing;
 
+import de.pannous.xvantage.core.*;
 import de.pannous.xvantage.core.util.Helper;
+import de.pannous.xvantage.core.util.test.ConstraintTF;
+import de.pannous.xvantage.core.util.test.EventTF;
 import de.pannous.xvantage.core.util.test.ObjectWithCollections;
 import de.pannous.xvantage.core.util.test.Person;
 import de.pannous.xvantage.core.util.test.SimpleObj;
@@ -21,16 +24,18 @@ import javax.xml.transform.stream.StreamResult;
 import org.junit.Before;
 import org.junit.Test;
 import static org.junit.Assert.*;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
 /**
  * @author Peter Karich, peat_hal 'at' users 'dot' sourceforge 'dot' net
  */
-public class ObjectStringTransformerTest extends XvantageTester {
+public class ObjectParsingTest extends XvantageTester {
 
     private StringWriter writer;
     private TransformerHandler transformerHandler;
 
-    public ObjectStringTransformerTest() {
+    public ObjectParsingTest() {
     }
 
     @Before
@@ -53,26 +58,26 @@ public class ObjectStringTransformerTest extends XvantageTester {
     @Test
     public void testParseObject() throws Exception {
         Binding<SimpleObj> bind = newBinding("/test", SimpleObj.class);
-        SimpleObj obj = objectParser.parseObject(bind, "<test><name>name1</name></test>").getValue();
+        SimpleObj obj = parsing.parseObject(bind, "<test><name>name1</name></test>").getValue();
         assertEquals("name1", obj.getName());
     }
 
     @Test
     public void testParse() throws Exception {
-        assertEquals(3.56f, objectParser.parseObjectAsProperty(Float.class, Helper.getRootFromString("<t>3.56</t>")));
-        assertEquals(3L, objectParser.parseObjectAsProperty(Long.class, Helper.getRootFromString("<t>3</t>")));
-        assertEquals(4, objectParser.parseObjectAsProperty(int.class, Helper.getRootFromString("<t>4</t>")));
-        assertEquals(4, objectParser.parseObjectAsProperty(int.class, Helper.getRootFromString("<t>4  </t>")));
-        assertEquals(true, objectParser.parseObjectAsProperty(boolean.class, Helper.getRootFromString("<t>true</t>")));
+        assertEquals(3.56f, parsing.parseObjectAsProperty(Float.class, Helper.getRootFromString("<t>3.56</t>")));
+        assertEquals(3L, parsing.parseObjectAsProperty(Long.class, Helper.getRootFromString("<t>3</t>")));
+        assertEquals(4, parsing.parseObjectAsProperty(int.class, Helper.getRootFromString("<t>4</t>")));
+        assertEquals(4, parsing.parseObjectAsProperty(int.class, Helper.getRootFromString("<t>4  </t>")));
+        assertEquals(true, parsing.parseObjectAsProperty(boolean.class, Helper.getRootFromString("<t>true</t>")));
 
-        assertTrue('c' == objectParser.parseObjectAsProperty(char.class, Helper.getRootFromString("<t>c</t>")));
-        assertEquals("", objectParser.parseObjectAsProperty(char.class, Helper.getRootFromString("<t></t>")));
-        assertEquals("", objectParser.parseObjectAsProperty(char.class, Helper.getRootFromString("<t/>")));
+        assertTrue('c' == parsing.parseObjectAsProperty(char.class, Helper.getRootFromString("<t>c</t>")));
+        assertEquals("", parsing.parseObjectAsProperty(char.class, Helper.getRootFromString("<t></t>")));
+        assertEquals("", parsing.parseObjectAsProperty(char.class, Helper.getRootFromString("<t/>")));
     }
 
     @Test
     public void testParseCollections() throws Exception {
-        List list = (List) objectParser.parseObjectAsProperty(ArrayList.class,
+        List list = (List) parsing.parseObjectAsProperty(ArrayList.class,
                 Helper.getRootFromString("<enclosing valueClass=\"String\"><value>1</value><value>2</value></enclosing>"));
         assertEquals(2, list.size());
         assertEquals("1", list.get(0));
@@ -81,7 +86,7 @@ public class ObjectStringTransformerTest extends XvantageTester {
 
     @Test
     public void testParseMap() throws Exception {
-        Map map = (HashMap) objectParser.parseObjectAsProperty(HashMap.class,
+        Map map = (HashMap) parsing.parseObjectAsProperty(HashMap.class,
                 Helper.getRootFromString("<stringMap keyClass=\"Integer\" valueClass=\"String\">" +
                 "<entry>            <key>1</key>            <value>test1</value>        </entry>" +
                 "<entry>            <key>2</key>            <value>test2</value>        </entry>" +
@@ -93,7 +98,7 @@ public class ObjectStringTransformerTest extends XvantageTester {
 
     @Test
     public void testParseArray() throws Exception {
-        Long[] list = (Long[]) objectParser.parseObjectAsProperty(Long[].class,
+        Long[] list = (Long[]) parsing.parseObjectAsProperty(Long[].class,
                 Helper.getRootFromString("<enclosing valueClass=\"long\"><value>2</value></enclosing>"));
         assertEquals(1, list.length);
         assertTrue(2L == list[0]);
@@ -101,38 +106,27 @@ public class ObjectStringTransformerTest extends XvantageTester {
 
     @Test
     public void testParseBitSet() throws Exception {
-        BitSet set = (BitSet) objectParser.parseObjectAsProperty(BitSet.class,
+        BitSet set = (BitSet) parsing.parseObjectAsProperty(BitSet.class,
                 Helper.getRootFromString("<value>{0, 4, 7, 9}</value>"));
         assertEquals(4, set.cardinality());
         assertTrue(set.get(4));
 
-        set = (BitSet) objectParser.parseObjectAsProperty(BitSet.class,
+        set = (BitSet) parsing.parseObjectAsProperty(BitSet.class,
                 Helper.getRootFromString("<value>{0, 4, 7, 9, }</value>"));
         assertEquals(4, set.cardinality());
         assertTrue(set.get(4));
     }
 
     @Test
-    public void testWriteBitSet() throws Exception {
-        BitSet set = new BitSet();
-        set.set(3);
-        set.set(4);
-        set.set(7);
-
-        objectParser.writeObjectAsProperty(set, BitSet.class, "set", transformerHandler);
-        assertEquals("<set>{3, 4, 7}</set>", writer.toString());
-    }
-
-    @Test
     public void testDoNotParseWithoutValueclassAttribute_ButDoNotThrowAnException() throws Exception {
-        List list = (List) objectParser.parseObjectAsProperty(ArrayList.class,
+        List list = (List) parsing.parseObjectAsProperty(ArrayList.class,
                 Helper.getRootFromString("<enclosing><value>2</value></enclosing>"));
         assertEquals(0, list.size());
     }
 
     @Test
     public void testParseNonePrimitiveObjectWithoutException() throws Exception {
-        SimpleObj obj = (SimpleObj) objectParser.parseObjectAsProperty(SimpleObj.class,
+        SimpleObj obj = (SimpleObj) parsing.parseObjectAsProperty(SimpleObj.class,
                 Helper.getRootFromString("<obj id=\"5\"><value>2</value></obj>"));
         assertNotNull(obj);
     }
@@ -142,7 +136,7 @@ public class ObjectStringTransformerTest extends XvantageTester {
         InputStream iStream = getClass().getResourceAsStream("bindingTestParseObjectWithCollection.xml");
         Binding bind = newBinding("/obj", ObjectWithCollections.class);
         String str = Helper.getAsString(iStream, 1024);
-        Entry<Long, ObjectWithCollections> res = objectParser.parseObject(bind, str);
+        Entry<Long, ObjectWithCollections> res = parsing.parseObject(bind, str);
         ObjectWithCollections owc = (ObjectWithCollections) res.getValue();
         assertEquals(3, owc.getStringMap().size());
         assertEquals("test1", owc.getStringMap().get(1));
@@ -158,18 +152,10 @@ public class ObjectStringTransformerTest extends XvantageTester {
         InputStream iStream = getClass().getResourceAsStream("bindingTestParseObjectWithEmptyCollection.xml");
         Binding bind = newBinding("/obj", ObjectWithCollections.class);
         String str = Helper.getAsString(iStream, 1024);
-        Entry<Long, ObjectWithCollections> res = objectParser.parseObject(bind, str);
+        Entry<Long, ObjectWithCollections> res = parsing.parseObject(bind, str);
         ObjectWithCollections owc = res.getValue();
         assertEquals(0, owc.getStringSet().size());
         assertEquals(0, owc.getStringMap().size());
-    }
-
-    @Test
-    public void testWriteObjectWithEmptyCollection() throws Exception {
-        ArrayList al = new ArrayList();
-
-        objectParser.writeObjectAsProperty(al, ArrayList.class, "list", transformerHandler);
-        assertEquals("<list/>", writer.toString());
     }
 
     @Test
@@ -180,7 +166,7 @@ public class ObjectStringTransformerTest extends XvantageTester {
 
         InputStream iStream = getClass().getResourceAsStream("bindingTestParseObjectWithReferences.xml");
         Binding<Person> bind = newBinding("/root/", Person.class);
-        Entry<Long, Person> res = objectParser.parseObject(bind, Helper.getAsString(iStream, 1024));
+        Entry<Long, Person> res = parsing.parseObject(bind, Helper.getAsString(iStream, 1024));
         assertEquals((Long) 5L, res.getKey());
         Person p1 = res.getValue();
 
@@ -200,7 +186,7 @@ public class ObjectStringTransformerTest extends XvantageTester {
         InputStream iStream = getClass().getResourceAsStream("bindingTestParseObjectWithReferences.xml");
         Binding<Person> bind = newBinding("/root/", Person.class);
 
-        Entry<Long, Person> res = objectParser.parseObject(bind, Helper.getAsString(iStream, 1024));
+        Entry<Long, Person> res = parsing.parseObject(bind, Helper.getAsString(iStream, 1024));
 
         Person p1 = res.getValue();
         assertEquals(2, p1.getTasks().size());
@@ -209,74 +195,34 @@ public class ObjectStringTransformerTest extends XvantageTester {
     }
 
     @Test
-    public void testWriteArrayList() throws Exception {
-        ArrayList al = new ArrayList();
-        al.add("Test1");
-        al.add("Test2");
+    public void testCustomParsing() throws Exception {
+        InputStream iStream = getClass().getResourceAsStream("complexFromTimeFinder.xml");
+        Binding<EventTF> bind = newBinding("/root/event", EventTF.class);
+        parsing.putParsing(ConstraintTF.class, new Parsing() {
 
-        objectParser.writeObjectAsProperty(al, ArrayList.class, "list", transformerHandler);
-        assertEquals("<list valueClass=\"string\">" +
-                "<value>Test1</value>" +
-                "<value>Test2</value>" +
-                "</list>", writer.toString());
-    }
+            public Object parse(Node node) {
+                float w = 0f;
+                EventTF e = null;
+                NodeList list = node.getChildNodes();
+                for (int i = 0; i < list.getLength(); i++) {
+                    Node subNode = list.item(i);
+                    if (subNode.getNodeType() == Node.ELEMENT_NODE) {
+                        if ("weight".equals(subNode.getNodeName()))
+                            w = (Float) parsing.parseObjectAsProperty(Float.class, subNode);
 
-    @Test
-    public void testWriteArray() throws Exception {
-        String[] array = {"Test1", "Test2"};
+                        if ("event".equals(subNode.getNodeName()))
+                            e = (EventTF) parsing.parseObjectAsProperty(EventTF.class, subNode);
+                    }
+                }
 
-        objectParser.writeObjectAsProperty(array, String[].class, "list", transformerHandler);
-        assertEquals("<list valueClass=\"string\">" +
-                "<value>Test1</value>" +
-                "<value>Test2</value>" +
-                "</list>", writer.toString());
-    }
-
-    @Test
-    public void testWriteMap() throws Exception {
-        Map map = new HashMap();
-        map.put(1, "test");
-        map.put(2, "test2");
-
-        objectParser.writeObjectAsProperty(map, Map.class, "list", transformerHandler);
-
-        String str = writer.toString();
-        assertTrue(str.contains("keyClass=\"integer\""));
-        assertTrue(str.contains("valueClass=\"string\""));
-        assertTrue(str.contains("<list"));
-        assertTrue(str.contains("<entry><key>1</key><value>test</value></entry>"));
-        assertTrue(str.contains("<entry><key>2</key><value>test2</value></entry>"));
-    }
-
-    @Test
-    public void testWriteObjectWithReferences() throws Exception {
-        Person p1 = new Person("p1", 1L);
-        p1.getTasks().add(new Task("t1", 1L));
-        p1.setMainTask(new Task("t4", 4L));
-
-        Map<Long, Person> persons = dataPool.getData(Person.class);
-        persons.put(p1.getId(), p1);
-
-        objectParser.writeObjectAsProperty(p1, Person.class, "p", transformerHandler);
-
-        String str = writer.toString();
-        assertEquals("<p>1</p>", str);
-    }
-
-    @Test
-    public void testWriteObjectEvenIfGetterThrowsException() throws Exception {
-        Person p1 = new Person("p1", 1L) {
-
-            @Override
-            public String getName() {
-                throw new UnsupportedOperationException("test");
+                return new ConstraintTF(w, e);
             }
-        };
-        Binding bind = newBinding("/p/", Person.class);
-        bind.ignoreMethod("getName");
-        Map<Long, Person> objects = (Map<Long, Person>) dataPool.getData(p1.getClass());
-        objects.put(p1.getId(), p1);
-        objectParser.writeObject(bind, p1, transformerHandler);
-        assertEquals("<person id=\"1\"><mainTask></mainTask><tasks/><id>1</id></person>", writer.toString());
+        });
+        Entry<Long, EventTF> res = parsing.parseObject(bind, Helper.getAsString(iStream, 1024));
+
+        EventTF eventResult = res.getValue();
+        assertEquals(1, eventResult.getConstraints().size());
+        ConstraintTF ec = eventResult.getConstraints().iterator().next();
+        assertEquals("test1", ec.getEvent().getName());
     }
 }

@@ -1,6 +1,5 @@
 package de.pannous.xvantage.core.parsing;
 
-import de.pannous.xvantage.core.*;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.List;
@@ -12,9 +11,9 @@ import org.w3c.dom.Node;
 public class ArrayParsing implements Parsing {
 
     private Class ct;
-    private ObjectStringTransformer transformer;
+    private ObjectParsing transformer;
 
-    public ArrayParsing(ObjectStringTransformer transformer) {
+    public ArrayParsing(ObjectParsing transformer) {
         this.transformer = transformer;
     }
 

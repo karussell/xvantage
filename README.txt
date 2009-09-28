@@ -38,6 +38,7 @@ StringReader iStream = new StringReader(
     "   <myobject><name>test</name></myobject>" +
     "</path>");
 // mount to /path/ with an alternative name 'myobject' instead of the default which would be simpleObj
+// this is the preferred way for mounting, because otherwise class refactoring results in different xml
 xadv.mount("/path/myobject", SimpleObj.class);
 DataPool pool = xadv.readObjects(iStream);
 SimpleObj obj = pool.getData(SimpleObj.class).values().iterator().next();
@@ -70,10 +71,12 @@ There are X, because of the X in xvantage ;-)
  * xml could be checked via xsd (but no must)
  * no license and free source code (public domain!)
 
+
   License
 ===========
 
-no license and free source code or public domain, see http://en.wikipedia.org/wiki/Public_domain
+no license and free source code aka as public domain, see http://en.wikipedia.org/wiki/Public_domain
+
 
   Xvantage compared to ...
 ============================
@@ -98,10 +101,8 @@ I will use it in my timefinder.de project to save/read objects to/from xml
   Hints
 =========
 
- * the default implementation of the DataPool (an interface) can be easily replaced:
-   new Xvantage().setDefaultDataPool(MyDataPool.class);
-   (factories are currently not supported)
- * A BiMap in DataPool was necessary because of getting an id while writing an
-   object to string
- * the default implementations of a list, collection and set could be replaced
-   through its methods in the Xadvantage class
+ * the default implementations of a list, collection and set
+   could be replaced through its methods in Xadvantage
+ * to avoid writing of null values set this through Xadvantage
+ * to avoid writing of some properties -> Xadvantage.ignoreMethod
+   (this will be replaced with the transient keyword at a later time)

@@ -1,5 +1,6 @@
 package de.pannous.xvantage.core;
 
+import de.pannous.xvantage.core.writing.ObjectWriting;
 import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -25,10 +26,10 @@ public class BindingTree {
     private Map<Class, Binding> bindings = new HashMap<Class, Binding>();
     private BindingLeaf root;
     private int maxLevel;
-    private ObjectStringTransformer parser;
+    private ObjectWriting writing;
 
-    public BindingTree(ObjectStringTransformer tr) {
-        parser = tr;
+    public BindingTree(ObjectWriting tr) {
+        writing = tr;
     }
 
     public void mount(Binding binding) {
@@ -124,7 +125,7 @@ public class BindingTree {
             if (tmpMap != null) {
                 for (Object oneObject : tmpMap.values()) {
                     try {
-                        parser.writeObject(bind, oneObject, transformerHandler);
+                        writing.writeObject(bind, oneObject, transformerHandler);
                     } catch (Exception ex) {
                         throw new UnsupportedOperationException("Couldn't write object " +
                                 oneObject + " (" + bind + ")", ex);

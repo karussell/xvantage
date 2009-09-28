@@ -5,7 +5,11 @@ package de.pannous.xvantage.core;
 
 import de.pannous.xvantage.core.impl.DefaultDataPool;
 import de.pannous.xvantage.core.impl.XHandler;
+import de.pannous.xvantage.core.parsing.ObjectParsing;
+import de.pannous.xvantage.core.parsing.Parsing;
 import de.pannous.xvantage.core.util.Helper;
+import de.pannous.xvantage.core.writing.ObjectWriting;
+import de.pannous.xvantage.core.writing.Writing;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
@@ -25,13 +29,17 @@ import org.xml.sax.helpers.XMLReaderFactory;
 public class Xvantage {
 
     private String encoding = "UTF-8";
-    private ObjectStringTransformer transformer;
+    private ObjectParsing objParsing;
+    private ObjectWriting objWriting;
     private BindingTree bindingTree;
     private Class<? extends DataPool> defaultDataPool = DefaultDataPool.class;
+    private boolean skipNull = false;
 
     public Xvantage() {
-        transformer = new ObjectStringTransformer();
-        bindingTree = new BindingTree(transformer);
+        objParsing = new ObjectParsing();
+        objWriting = new ObjectWriting();
+
+        bindingTree = new BindingTree(objWriting);
     }
 
     /**
@@ -55,8 +63,10 @@ public class Xvantage {
                 dataPool = c.newInstance();
             }
 
-            transformer.init(dataPool);
-            XHandler handler = new XHandler(transformer, bindingTree);
+            objWriting.init(dataPool);
+            objParsing.init(dataPool);
+
+            XHandler handler = new XHandler(objParsing, bindingTree);
             XMLReader xr = XMLReaderFactory.createXMLReader();
             xr.setContentHandler(handler);
             InputSource iSource = new InputSource(reader);
@@ -99,7 +109,11 @@ public class Xvantage {
             throw new NullPointerException("DataPool cannot be null!");
 
         try {
-            transformer.init(dataPool);
+            objParsing.init(dataPool);
+            objWriting.init(dataPool);
+            objParsing.setSkipNullProperty(skipNull);
+            objWriting.setSkipNullProperty(skipNull);
+
             bindingTree.saveObjects(dataPool, writer, encoding);
             return writer;
         } catch (Exception ex) {
@@ -152,28 +166,50 @@ public class Xvantage {
         return false;
     }
 
+    public void setSkipNullProperty(boolean skip) {
+        this.skipNull = skip;
+    }
+
+    /**
+     * To set your own implementation of how an xml string should be read.
+     * All none POJOs are suitable for that, all POJOs should be handled by
+     * Xvantages' default serialization mechanism.
+     */
+    public void putParsing(Class clazz, Parsing parsing) {
+        objParsing.putParsing(clazz, parsing);
+    }
+
+    /**
+     * To set your own implementation of how an object should be converted into
+     * xml. All none POJOs are suitable for that, all POJOs should be handled by
+     * Xvantages' default serialization mechanism.
+     */
+    public void putWriting(Class clazz, Writing w) {
+        objWriting.putWriting(clazz, w);
+    }
+
     /**
      * @param interfc the interface which should trigger a new instance of specified clazz
      * @param clazz the implementation of specified interfc
      */
     public <T> void setDefaultImplementation(Class<T> interfc, Class<? extends T> clazz) {
         if (Map.class.equals(interfc))
-            transformer.setDefaultMapImpl((Class) clazz);
+            objParsing.setDefaultMapImpl((Class) clazz);
         else if (List.class.equals(interfc))
-            transformer.setDefaultListImpl((Class) clazz);
+            objParsing.setDefaultListImpl((Class) clazz);
         else if (Set.class.equals(interfc))
-            transformer.setDefaultSetImpl((Class) clazz);
+            objParsing.setDefaultSetImpl((Class) clazz);
         else
             throw new UnsupportedOperationException("Currently you can only set the default implementations for List, Map and Set");
     }
 
     public <T> Class<? extends T> getDefaultImplementation(Class<T> interfc) {
         if (Map.class.equals(interfc))
-            return (Class<? extends T>) transformer.getDefaultMapImpl();
+            return (Class<? extends T>) objParsing.getDefaultMapImpl();
         else if (List.class.equals(interfc))
-            return (Class<? extends T>) transformer.getDefaultListImpl();
+            return (Class<? extends T>) objParsing.getDefaultListImpl();
         else if (Set.class.equals(interfc))
-            return (Class<? extends T>) transformer.getDefaultSetImpl();
+            return (Class<? extends T>) objParsing.getDefaultSetImpl();
         else
             throw new UnsupportedOperationException("Currently you can only set the default implementations for List, Map and Set");
     }

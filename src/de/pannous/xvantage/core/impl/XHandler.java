@@ -5,6 +5,7 @@ import de.pannous.xvantage.core.BindingLeaf;
 import de.pannous.xvantage.core.BindingTree;
 import de.pannous.xvantage.core.DataPool;
 import de.pannous.xvantage.core.ObjectStringTransformer;
+import de.pannous.xvantage.core.parsing.ObjectParsing;
 import org.xml.sax.Attributes;
 import org.xml.sax.helpers.DefaultHandler;
 
@@ -25,10 +26,10 @@ public class XHandler extends DefaultHandler {
      * in both trees. see test case testReadObjectsWithPathIncluded
      */
     private int mismatchInTree = 0;
-    private ObjectStringTransformer transformer;
+    private ObjectParsing parsing;
 
-    public XHandler(ObjectStringTransformer tr, BindingTree bindingTree) {
-        transformer = tr;
+    public XHandler(ObjectParsing parsing, BindingTree bindingTree) {
+        this.parsing = parsing;
         currentLeaf = bindingTree.getRoot();
         if (currentLeaf == null)
             throw new NullPointerException("root == null is not supported. Did you already mount some classed?");
@@ -80,7 +81,7 @@ public class XHandler extends DefaultHandler {
                 // TODO PERFORMANCE: parse the already parsed string again :-(
                 // by now we can use DOM. this is easier for now
                 try {
-                    transformer.parseObject(activeBinding, value);
+                    parsing.parseObject(activeBinding, value);
                 } catch (Exception ex) {
                     throw new UnsupportedOperationException("Couldn't parse:" +
                             value + " (" + activeBinding + ")", ex);
@@ -110,6 +111,6 @@ public class XHandler extends DefaultHandler {
     }
 
     public DataPool getResult() {
-        return transformer.getDataPool();
+        return parsing.getDataPool();
     }
 }

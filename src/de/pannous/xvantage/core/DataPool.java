@@ -10,6 +10,11 @@ import java.util.Map;
 public interface DataPool {
 
     /**
+     * @return all data in an unmodifiable map
+     */
+    Map<Class, Map<Long, Object>> getData();
+
+    /**
      * @return all objects of the specified clazz
      */
     <T> Map<Long, T> getData(Class<T> clazz);
