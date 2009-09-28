@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<t>
+    <task id="2">
+        <persons/>
+        <parentTask></parentTask>
+        <subTasks/>
+        <name>t2</name>
+        <id>2</id>
+    </task>
+    <task id="4">
+        <persons/>
+        <parentTask></parentTask>
+        <subTasks/>
+        <name>t4</name>
+        <id>4</id>
+    </task>
+    <task id="1">
+        <persons/>
+        <parentTask>4</parentTask>
+        <subTasks valueClass="de.pannous.xvantage.core.util.test.Task">
+            <value>3</value>
+            <value>2</value>
+        </subTasks>
+        <name>t1</name>
+        <id>1</id>
+    </task>
+    <task id="3">
+        <persons/>
+        <parentTask></parentTask>
+        <subTasks/>
+        <name>t3</name>
+        <id>3</id>
+    </task>
+</t>

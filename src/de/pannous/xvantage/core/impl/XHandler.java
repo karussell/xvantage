@@ -31,7 +31,7 @@ public class XHandler extends DefaultHandler {
         transformer = tr;
         currentLeaf = bindingTree.getRoot();
         if (currentLeaf == null)
-            throw new NullPointerException("root == null is not supported");
+            throw new NullPointerException("root == null is not supported. Did you already mount some classed?");
     }
 
     @Override

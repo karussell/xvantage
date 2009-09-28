@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.xml.sax.InputSource;
+import org.xml.sax.SAXParseException;
 import org.xml.sax.XMLReader;
 import org.xml.sax.helpers.XMLReaderFactory;
 
@@ -40,6 +41,10 @@ public class Xvantage {
         return readObjects(reader, null);
     }
 
+    /**
+     * This method reads objects from specified reader and uses already existing
+     * objects from dataPool to syncronize references.
+     */
     public DataPool readObjects(Reader reader, DataPool dataPool) {
         if (reader == null)
             throw new NullPointerException("Reader cannot be null!");
@@ -59,6 +64,8 @@ public class Xvantage {
             xr.parse(iSource);
 
             return handler.getResult();
+        } catch (SAXParseException ex) {
+            throw new RuntimeException("Is the content of the xml correct?", ex);
         } catch (Exception ex) {
             throw new RuntimeException(ex);
         }
@@ -72,6 +79,9 @@ public class Xvantage {
     }
 
     public DataPool readObjects(InputStream iStream, DataPool pool) {
+        if (iStream == null)
+            throw new NullPointerException("InputStream cannot be null!");
+
         try {
             return readObjects(new InputStreamReader(iStream, "UTF-8"), pool);
         } catch (Exception ex) {
@@ -82,7 +92,12 @@ public class Xvantage {
     /**
      * @param dataPool should contain some objects you want to persist
      */
-    public Writer saveObjects(DataPool dataPool, Writer writer) {
+    public Writer saveObjects(Writer writer, DataPool dataPool) {
+        if (writer == null)
+            throw new NullPointerException("Writer cannot be null!");
+        if (dataPool == null)
+            throw new NullPointerException("DataPool cannot be null!");
+
         try {
             transformer.init(dataPool);
             bindingTree.saveObjects(dataPool, writer, encoding);

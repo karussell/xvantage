@@ -1,5 +1,6 @@
 package de.pannous.xvantage.core;
 
+import de.pannous.xvantage.core.util.Helper;
 import de.pannous.xvantage.core.util.test.SimpleObj;
 import de.pannous.xvantage.core.util.test.ComplexObject;
 import de.pannous.xvantage.core.util.test.Person;
@@ -102,7 +103,7 @@ public class XvantageTest extends XvantageTester {
         map.put(0L, new SimpleObj("test"));
         StringWriter writer = new StringWriter();
         xadv.mount("/path/myobject", SimpleObj.class);
-        xadv.saveObjects(dataPool, writer);
+        xadv.saveObjects(writer, dataPool);
 
         String expected = HEADER +
                 "<path>\n" +
@@ -123,13 +124,13 @@ public class XvantageTest extends XvantageTester {
 
     @Test
     public void testWriteTwoObjects() {
-       Map<Long, SimpleObj> map = dataPool.getData(SimpleObj.class);
+        Map<Long, SimpleObj> map = dataPool.getData(SimpleObj.class);
         map.put(0L, new SimpleObj("test"));
         map.put(1L, new SimpleObj("test2"));
 
         StringWriter writer = new StringWriter();
         xadv.mount("/p1/myobject", SimpleObj.class);
-        xadv.saveObjects(dataPool, writer);
+        xadv.saveObjects(writer, dataPool);
 
         String result = writer.toString();
 
@@ -154,7 +155,7 @@ public class XvantageTest extends XvantageTester {
 
     @Test
     public void testWriteTwoRelatedObjects() {
-       Map<Long, Person> pMap = dataPool.getData(Person.class);
+        Map<Long, Person> pMap = dataPool.getData(Person.class);
 
         Person p1 = new Person("p1", 1L);
         Person p2 = new Person("p2", 2L);
@@ -174,7 +175,7 @@ public class XvantageTest extends XvantageTester {
 
         xadv.mount("/root/", Person.class);
         xadv.mount("/root/", Task.class);
-        tmpResult1 = xadv.saveObjects(dataPool, new StringWriter()).toString();
+        tmpResult1 = xadv.saveObjects( new StringWriter(), dataPool).toString();
 
         assertTrue(tmpResult1.contains(HEADER));
         assertTrue(tmpResult1.contains("<person id=\"2\">"));
@@ -186,7 +187,7 @@ public class XvantageTest extends XvantageTester {
     @Test
     public void testReadOutPutFromPreviousWrite() {
         testWriteTwoRelatedObjects();
-        System.out.println(tmpResult1);
+
         DataPool pool = xadv.readObjects(new StringReader(tmpResult1));
         Person p1 = pool.getData(Person.class).get(1L);
         assertNotNull(p1);
@@ -226,10 +227,81 @@ public class XvantageTest extends XvantageTester {
         t1.getPersons().add(p2);
 
         xadv.mount("/root/", Person.class);
-        String str = xadv.saveObjects(dataPool, new StringWriter()).toString();
+        String str = xadv.saveObjects( new StringWriter(), dataPool).toString();
 
         assertTrue(str.contains(HEADER));
         assertTrue(str.contains("<tasks valueClass=\"de.pannous.xvantage.core.util.test.Task\">\n<value>1</value>\n</tasks>"));
         assertFalse(str.contains("<persons valueClass=\"de.pannous.xvantage.core.util.test.Person\">\n<value>1</value>\n<value>2</value>\n</persons>"));
+    }
+
+    @Test
+    public void testWriteHeavyReferenced() throws Exception {
+        Task t1 = new Task("t1", 1L);
+        Task t2 = new Task("t2", 2L);
+        Task t3 = new Task("t3", 3L);
+        Task t4 = new Task("t4", 4L);
+
+        t1.getSubTasks().add(t3);
+        t1.getSubTasks().add(t2);
+        t1.setParentTask(t4);
+
+        Map<Long, Task> tasks = dataPool.getData(Task.class);
+        tasks.put(t1.getId(), t1);
+        tasks.put(t2.getId(), t2);
+        tasks.put(t3.getId(), t3);
+        tasks.put(t4.getId(), t4);
+
+        xadv.mount("/t/", Task.class);
+
+        tmpResult1 = xadv.saveObjects( new StringWriter(), dataPool).toString();
+
+        assertEquals(4, Helper.countPattern(tmpResult1, "<task id=\""));
+        assertEquals(1, Helper.countPattern(tmpResult1, "<parentTask>4</parentTask>"));
+        assertEquals(1, Helper.countPattern(tmpResult1, "<value>3</value>"));
+        assertEquals(1, Helper.countPattern(tmpResult1, "<value>2</value>"));
+    }
+
+    @Test
+    public void testReadHeavyReferenced() throws Exception {
+        testWriteHeavyReferenced();
+        DataPool pool = xadv.readObjects(new StringReader(tmpResult1));
+
+        Map<Long, Task> map = pool.getData(Task.class);
+        Task t1 = map.get(1L);
+        Task t2 = map.get(2L);
+        Task t3 = map.get(3L);
+        Task t4 = map.get(4L);
+
+        assertEquals(t4, t1.getParentTask());
+        assertEquals(2, t1.getSubTasks().size());
+        assertTrue(t1.getSubTasks().contains(t2));
+        assertTrue(t1.getSubTasks().contains(t3));
+    }
+
+    @Test
+    public void testReadWithAlreadyExistingTask() throws Exception {
+        Task t1 = new Task("t1", 1L);
+        Map<Long, Task> tasks = dataPool.getData(Task.class);
+        tasks.put(t1.getId(), t1);
+        xadv.mount("/t/", Task.class);
+        DataPool pool = xadv.readObjects(getClass().getResourceAsStream("readTasksWithExisting.xml"), dataPool);
+        Map<Long, Task> map = pool.getData(Task.class);
+
+        assertEquals(4, map.size());
+        assertEquals(t1, map.get(1L));
+    }
+
+    @Test
+    public void testReadWithAlreadyExistingTask_XmlDefinitionWillOverwriteExisting() throws Exception {
+        testWriteHeavyReferenced();
+
+        Task t1 = new Task("t1", 1L);
+        Map<Long, Task> tasks = dataPool.getData(Task.class);
+        tasks.put(t1.getId(), t1);
+        DataPool pool = xadv.readObjects(new StringReader(tmpResult1), dataPool);
+        Map<Long, Task> map = pool.getData(Task.class);
+
+        assertEquals("Should create new task if present in xml", 5, map.size());
+        assertEquals(t1, map.get(1L));
     }
 }

@@ -1,5 +1,3 @@
- * even try heavy self circular references like so
-   class Task { Task parentTask; List<Task> subTasks;}
 => publish to "sf maven" as version=0.8
 
  * instead setter/getter use field => instead ignoreMethod use transient
