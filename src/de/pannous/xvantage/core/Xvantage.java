@@ -38,7 +38,6 @@ public class Xvantage {
     public Xvantage() {
         objParsing = new ObjectParsing();
         objWriting = new ObjectWriting();
-
         bindingTree = new BindingTree(objWriting);
     }
 

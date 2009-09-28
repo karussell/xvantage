@@ -41,8 +41,10 @@ public class XHandler extends DefaultHandler {
             throw new UnsupportedOperationException("This is a bug! qName was " + qName);
 
         if (currentLeaf.getChildsMap().get(qName) != null && mismatchInTree == 0) {
+            // go deeper
             currentLeaf = currentLeaf.getChildsMap().get(qName);
         } else {
+            // block going deeper + block going into mounted bindings
             if (!(currentLeaf.isRoot() && currentLeaf.getName().equals(qName)))
                 mismatchInTree++;
         }
@@ -70,12 +72,21 @@ public class XHandler extends DefaultHandler {
 
     @Override
     public void endElement(String uri, String name, String qName) {
+        if (currentLeaf == null)
+            throw new IllegalStateException("This is a bug! Current leaf name should be " + qName + " but leaf == null");
+
+        // go only higher if we went into this element in startElement
+        if (mismatchInTree == 0 && qName.equals(currentLeaf.getName())) {
+            currentLeaf = currentLeaf.getParent();
+        } else
+            mismatchInTree--;
+
         if (activeBinding != null) {
             sbForOneElement.append("</");
             sbForOneElement.append(qName);
             sbForOneElement.append('>');
 
-            if (qName.equals(activeBinding.getElementName())) {
+            if (mismatchInTree == 0 && qName.equals(activeBinding.getElementName())) {
                 String value = sbForOneElement.toString();
 
                 // TODO PERFORMANCE: parse the already parsed string again :-(
@@ -91,17 +102,6 @@ public class XHandler extends DefaultHandler {
                 sbForOneElement = new StringBuilder();
             }
         }
-
-        if (currentLeaf == null)
-            throw new IllegalStateException("This is a bug! Current leaf name should be " + qName + " but leaf == null");
-
-        // go only higher if we went into this element in startElement
-        if (qName.equals(currentLeaf.getName())) {
-            if (mismatchInTree == 0) {
-                currentLeaf = currentLeaf.getParent();
-            }
-        } else
-            mismatchInTree--;
     }
 
     @Override

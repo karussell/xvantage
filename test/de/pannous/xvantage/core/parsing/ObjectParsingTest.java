@@ -13,6 +13,7 @@ import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -192,37 +193,5 @@ public class ObjectParsingTest extends XvantageTester {
         assertEquals(2, p1.getTasks().size());
 
         assertTrue("should create new task", task == p1.getMainTask());
-    }
-
-    @Test
-    public void testCustomParsing() throws Exception {
-        InputStream iStream = getClass().getResourceAsStream("complexFromTimeFinder.xml");
-        Binding<EventTF> bind = newBinding("/root/event", EventTF.class);
-        parsing.putParsing(ConstraintTF.class, new Parsing() {
-
-            public Object parse(Node node) {
-                float w = 0f;
-                EventTF e = null;
-                NodeList list = node.getChildNodes();
-                for (int i = 0; i < list.getLength(); i++) {
-                    Node subNode = list.item(i);
-                    if (subNode.getNodeType() == Node.ELEMENT_NODE) {
-                        if ("weight".equals(subNode.getNodeName()))
-                            w = (Float) parsing.parseObjectAsProperty(Float.class, subNode);
-
-                        if ("event".equals(subNode.getNodeName()))
-                            e = (EventTF) parsing.parseObjectAsProperty(EventTF.class, subNode);
-                    }
-                }
-
-                return new ConstraintTF(w, e);
-            }
-        });
-        Entry<Long, EventTF> res = parsing.parseObject(bind, Helper.getAsString(iStream, 1024));
-
-        EventTF eventResult = res.getValue();
-        assertEquals(1, eventResult.getConstraints().size());
-        ConstraintTF ec = eventResult.getConstraints().iterator().next();
-        assertEquals("test1", ec.getEvent().getName());
     }
 }

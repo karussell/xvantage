@@ -86,7 +86,6 @@ public class ObjectParsing extends ObjectStringTransformer {
      */
     public <T> Entry<Long, T> parseObject(Binding<T> binding, String value) throws Exception {
         Document doc = builder.parse(new InputSource(new StringReader(value)));
-
         Class clazz = binding.getClassObject();
         Map<Long, T> objects = dataPool.getData(clazz);
         Element firstElement = Helper.getFirstElement(doc.getChildNodes());
@@ -110,6 +109,36 @@ public class ObjectParsing extends ObjectStringTransformer {
 
         fillWithProperties(binding, obj, firstElement.getChildNodes());
         return new MapEntry<Long, T>(id, obj);
+    }
+
+    public Object parseObjectAsProperty(Class tmpClazz, Node node) {
+        Parsing parsing = getClassParsing(tmpClazz);
+        if (parsing == null) {
+            // if no collection or no primitive type was found we use a reference
+            // e.g. <mainTask>1</mainTask>             
+            try {
+                Long id = (Long) longParse.parse(node);
+                Map<Long, Object> map = dataPool.getData(tmpClazz);
+                Object obj = map.get(id);
+                if (obj == null) {
+                    try {
+                        Constructor c = Helper.getPrivateConstructor(tmpClazz);
+                        obj = c.newInstance();
+                    } catch (Exception ex) {
+                        try {
+                            obj = tmpClazz.newInstance();
+                        } catch (Exception ex2) {
+                            throw new UnsupportedOperationException("Couldn't call default constructor of " + tmpClazz + " node:" + node.getTextContent(), ex2);
+                        }
+                    }
+                    map.put(id, obj);
+                }
+                return obj;
+            } catch (NumberFormatException ex) {
+                return null;
+            }
+        }
+        return parsing.parse(node);
     }
 
     /**
@@ -152,37 +181,6 @@ public class ObjectParsing extends ObjectStringTransformer {
             // else unknown class => no collection/primitive
         }
         return parsing;
-    }
-
-    public Object parseObjectAsProperty(Class tmpClazz, Node node) {
-        Parsing parsing = getClassParsing(tmpClazz);
-        if (parsing == null) {
-            // if no collection or no primitive type was found we use a reference
-            // e.g. <mainTask>1</mainTask>
-            Long id;
-            try {
-                id = (Long) longParse.parse(node);
-                Map<Long, Object> map = dataPool.getData(tmpClazz);
-                Object obj = map.get(id);
-                if (obj == null) {
-                    try {
-                        Constructor c = Helper.getPrivateConstructor(tmpClazz);
-                        obj = c.newInstance();
-                    } catch (Exception ex) {
-                        try {
-                            obj = tmpClazz.newInstance();
-                        } catch (Exception ex2) {
-                            throw new UnsupportedOperationException("Couldn't call default constructor of " + tmpClazz + " node:" + node.getTextContent(), ex2);
-                        }
-                    }
-                    map.put(id, obj);
-                }
-                return obj;
-            } catch (NumberFormatException ex) {
-                return null;
-            }
-        }
-        return parsing.parse(node);
     }
 
     public void fillCollection(Collection coll, Node node) {

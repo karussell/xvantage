@@ -1,8 +1,11 @@
 package de.pannous.xvantage.core;
 
+import de.pannous.xvantage.core.parsing.Parsing;
 import de.pannous.xvantage.core.util.Helper;
 import de.pannous.xvantage.core.util.test.SimpleObj;
 import de.pannous.xvantage.core.util.test.ComplexObject;
+import de.pannous.xvantage.core.util.test.ConstraintTF;
+import de.pannous.xvantage.core.util.test.EventTF;
 import de.pannous.xvantage.core.util.test.Person;
 import de.pannous.xvantage.core.util.test.Task;
 import java.io.InputStream;
@@ -12,11 +15,14 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import org.junit.Before;
 import org.junit.Test;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 import static org.junit.Assert.*;
 
 /**
@@ -25,7 +31,7 @@ import static org.junit.Assert.*;
 public class XvantageTest extends XvantageTester {
 
     private static String HEADER = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
-    private Xvantage xadv = new Xvantage();
+    private Xvantage xvan = new Xvantage();
 
     public XvantageTest() {
     }
@@ -34,7 +40,7 @@ public class XvantageTest extends XvantageTester {
     @Override
     public void setUp() throws Exception {
         super.setUp();
-        xadv = new Xvantage();
+        xvan = new Xvantage();
     }
 
     @Test
@@ -44,8 +50,8 @@ public class XvantageTest extends XvantageTester {
                 "   <fake><myobject>haha! fake! binding cannot parse me if incorrectly implemented</myobject></fake>" +
                 "   <myobject><name>test</name></myobject>" +
                 "</path>");
-        xadv.mount("/path/myobject", SimpleObj.class);
-        DataPool pool = xadv.readObjects(iStream);
+        xvan.mount("/path/myobject", SimpleObj.class);
+        DataPool pool = xvan.readObjects(iStream);
         assertEquals(1, pool.getData(SimpleObj.class).size());
         SimpleObj obj = pool.getData(SimpleObj.class).values().iterator().next();
         assertNotNull(obj);
@@ -55,16 +61,16 @@ public class XvantageTest extends XvantageTester {
     @Test
     public void testReadTwoObjects() {
         InputStream iStream = getClass().getResourceAsStream("readTwoObjects.xml");
-        xadv.mount("/path/", SimpleObj.class);
-        DataPool pool = xadv.readObjects(iStream);
+        xvan.mount("/path/", SimpleObj.class);
+        DataPool pool = xvan.readObjects(iStream);
         assertEquals(2, pool.getData(SimpleObj.class).size());
     }
 
     @Test
     public void testReadMoreComplexObjects() {
         InputStream iStream = getClass().getResourceAsStream("readMoreComplexObjects.xml");
-        xadv.mount("/path/", ComplexObject.class);
-        DataPool pool = xadv.readObjects(iStream);
+        xvan.mount("/path/", ComplexObject.class);
+        DataPool pool = xvan.readObjects(iStream);
         assertEquals(2, pool.getData(ComplexObject.class).size());
 
         // order is not guaranteed in HashMap :-( in FastMap it would ...
@@ -90,7 +96,7 @@ public class XvantageTest extends XvantageTester {
     @Test
     public void testDoNotReadObjectAtRoot() {
         try {
-            xadv.mount("/myobject", SimpleObj.class);
+            xvan.mount("/myobject", SimpleObj.class);
             assertTrue(true);
         } catch (Exception ex) {
             assertTrue(true);
@@ -102,8 +108,8 @@ public class XvantageTest extends XvantageTester {
         Map<Long, SimpleObj> map = dataPool.getData(SimpleObj.class);
         map.put(0L, new SimpleObj("test"));
         StringWriter writer = new StringWriter();
-        xadv.mount("/path/myobject", SimpleObj.class);
-        xadv.saveObjects(writer, dataPool);
+        xvan.mount("/path/myobject", SimpleObj.class);
+        xvan.saveObjects(writer, dataPool);
 //        System.out.println(writer.toString());
         String expected = HEADER +
                 "<path>\n" +
@@ -116,7 +122,7 @@ public class XvantageTest extends XvantageTester {
     @Test
     public void testWriteDirectlyToRootIsCurrentlyNotSupported() {
         try {
-            xadv.mount("/myobject", SimpleObj.class);
+            xvan.mount("/myobject", SimpleObj.class);
             assertTrue(false);
         } catch (Exception ex) {
         }
@@ -129,8 +135,8 @@ public class XvantageTest extends XvantageTester {
         map.put(1L, new SimpleObj("test2"));
 
         StringWriter writer = new StringWriter();
-        xadv.mount("/p1/myobject", SimpleObj.class);
-        xadv.saveObjects(writer, dataPool);
+        xvan.mount("/p1/myobject", SimpleObj.class);
+        xvan.saveObjects(writer, dataPool);
 
         String result = writer.toString();
 
@@ -173,9 +179,9 @@ public class XvantageTest extends XvantageTester {
         p2.getTasks().add(t1);
         t1.getPersons().add(p2);
 
-        xadv.mount("/root/", Person.class);
-        xadv.mount("/root/", Task.class);
-        tmpResult1 = xadv.saveObjects(new StringWriter(), dataPool).toString();
+        xvan.mount("/root/", Person.class);
+        xvan.mount("/root/", Task.class);
+        tmpResult1 = xvan.saveObjects(new StringWriter(), dataPool).toString();
 
         assertTrue(tmpResult1.contains(HEADER));
         assertTrue(tmpResult1.contains("<person id=\"2\">"));
@@ -188,7 +194,7 @@ public class XvantageTest extends XvantageTester {
     public void testReadOutPutFromPreviousWrite() {
         testWriteTwoRelatedObjects();
 
-        DataPool pool = xadv.readObjects(new StringReader(tmpResult1));
+        DataPool pool = xvan.readObjects(new StringReader(tmpResult1));
         Person p1 = pool.getData(Person.class).get(1L);
         assertNotNull(p1);
         assertEquals("p1", p1.getName());
@@ -226,8 +232,8 @@ public class XvantageTest extends XvantageTester {
         p2.getTasks().add(t1);
         t1.getPersons().add(p2);
 
-        xadv.mount("/root/", Person.class);
-        String str = xadv.saveObjects(new StringWriter(), dataPool).toString();
+        xvan.mount("/root/", Person.class);
+        String str = xvan.saveObjects(new StringWriter(), dataPool).toString();
 
         assertTrue(str.contains(HEADER));
         assertTrue(str.contains("<tasks valueClass=\"de.pannous.xvantage.core.util.test.Task\">\n<value>1</value>\n</tasks>"));
@@ -251,9 +257,9 @@ public class XvantageTest extends XvantageTester {
         tasks.put(t3.getId(), t3);
         tasks.put(t4.getId(), t4);
 
-        xadv.mount("/t/", Task.class);
+        xvan.mount("/t/", Task.class);
 
-        tmpResult1 = xadv.saveObjects(new StringWriter(), dataPool).toString();
+        tmpResult1 = xvan.saveObjects(new StringWriter(), dataPool).toString();
 
         assertEquals(4, Helper.countPattern(tmpResult1, "<task id=\""));
         assertEquals(1, Helper.countPattern(tmpResult1, "<parentTask>4</parentTask>"));
@@ -264,7 +270,7 @@ public class XvantageTest extends XvantageTester {
     @Test
     public void testReadHeavyReferenced() throws Exception {
         testWriteHeavyReferenced();
-        DataPool pool = xadv.readObjects(new StringReader(tmpResult1));
+        DataPool pool = xvan.readObjects(new StringReader(tmpResult1));
 
         Map<Long, Task> map = pool.getData(Task.class);
         Task t1 = map.get(1L);
@@ -283,8 +289,8 @@ public class XvantageTest extends XvantageTester {
         Task t1 = new Task("t1", 1L);
         Map<Long, Task> tasks = dataPool.getData(Task.class);
         tasks.put(t1.getId(), t1);
-        xadv.mount("/t/", Task.class);
-        DataPool pool = xadv.readObjects(getClass().getResourceAsStream("readTasksWithExisting.xml"), dataPool);
+        xvan.mount("/t/", Task.class);
+        DataPool pool = xvan.readObjects(getClass().getResourceAsStream("readTasksWithExisting.xml"), dataPool);
         Map<Long, Task> map = pool.getData(Task.class);
 
         assertEquals(4, map.size());
@@ -303,11 +309,54 @@ public class XvantageTest extends XvantageTester {
         assertEquals(4, tasks.size());
 
         // finally read ..
-        DataPool pool = xadv.readObjects(new StringReader(tmpResult1), dataPool);
+        DataPool pool = xvan.readObjects(new StringReader(tmpResult1), dataPool);
         Map<Long, Task> map = pool.getData(Task.class);
 
         assertEquals("Should create new task if present in xml", 4, map.size());
         assertEquals("reference stays", t1, map.get(1L));
         assertEquals("but properties will be overwritten", "t1", map.get(1L).getName());
+    }
+
+
+    @Test
+    public void testCustomParsing() throws Exception {
+        InputStream iStream = getClass().getResourceAsStream("complexFromTimeFinder.xml");
+        
+        xvan.putParsing(ConstraintTF.class, new Parsing() {
+
+            public Object parse(Node node) {
+                float w = 0f;
+                EventTF e = null;
+                NodeList list = node.getChildNodes();
+                for (int i = 0; i < list.getLength(); i++) {
+                    Node subNode = list.item(i);
+                    if (subNode.getNodeType() == Node.ELEMENT_NODE) {
+                        if ("weight".equals(subNode.getNodeName()))
+                            w = (Float) parsing.parseObjectAsProperty(Float.class, subNode);
+
+                        if ("event".equals(subNode.getNodeName()))
+                            e = (EventTF) parsing.parseObjectAsProperty(EventTF.class, subNode);
+                    }
+                }
+
+                return new ConstraintTF(w, e);
+            }
+        });
+        xvan.mount("/root/events/event", EventTF.class);
+        DataPool tmpPool = xvan.readObjects(new StringReader(Helper.getAsString(iStream, 1024)), dataPool);
+
+        Map<Long, EventTF> events = tmpPool.getData(EventTF.class);
+
+        EventTF ev1 = events.get(1L);
+        EventTF ev2 = events.get(2L);
+        assertEquals(1, ev1.getConstraints().size());
+        assertEquals(1, ev2.getConstraints().size());
+        
+        Iterator<ConstraintTF> iter = ev1.getConstraints().iterator();
+        ConstraintTF ec = iter.next();
+        assertEquals("test1", ec.getEvent().getName());
+
+        ec = ev2.getConstraints().iterator().next();
+        assertEquals("test2", ec.getEvent().getName());
     }
 }
