@@ -10,17 +10,13 @@ import java.util.Map;
  */
 public class DefaultDataPool implements DataPool {
 
-    private Map<Class, BiMap<Long, Object>> objects = new HashMap<Class, BiMap<Long, Object>>();
+    private Map<Class, Map<Long, Object>> objects = new HashMap<Class, Map<Long, Object>>();
 
-    public Map<Class, BiMap<Long, Object>> getAll() {
-        return objects;
-    }
-
-    public <T> BiMap<Long, T> getData(Class<T> clazz) {
-        if(clazz == null)
+    public <T> Map<Long, T> getData(Class<T> clazz) {
+        if (clazz == null)
             return null;
-        
-        BiMap<Long, Object> map = objects.get(clazz);
+
+        BiMap<Long, Object> map = (BiMap<Long, Object>) objects.get(clazz);
         if (map == null) {
             map = new BiMap();
             objects.put(clazz, map);
@@ -28,9 +24,20 @@ public class DefaultDataPool implements DataPool {
         return (BiMap<Long, T>) map;
     }
 
+    public Long getId(Object object) {
+        if (object == null)
+            return null;
+
+        BiMap<Long, Object> map = (BiMap<Long, Object>) getData(object.getClass());
+        if (map != null)
+            return map.getSecond(object);
+
+        return null;
+    }
+
     @Override
     public String toString() {
-        return objects.toString();
+        return objects.entrySet().toString();
     }
 }
 

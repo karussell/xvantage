@@ -1,6 +1,5 @@
 package de.pannous.xvantage.core;
 
-import de.pannous.xvantage.core.util.BiMap;
 import java.util.Map;
 
 /**
@@ -10,7 +9,13 @@ import java.util.Map;
  */
 public interface DataPool {
 
-    Map<Class, BiMap<Long, Object>> getAll();
+    /**
+     * @return all objects of the specified clazz
+     */
+    <T> Map<Long, T> getData(Class<T> clazz);
 
-    <T> BiMap<Long, T> getData(Class<T> clazz);
+    /**
+     * @return the id of the specfied object
+     */
+    Long getId(Object object);
 }

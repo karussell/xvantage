@@ -2,7 +2,6 @@ package de.pannous.xvantage.core;
 
 import de.pannous.xvantage.core.parsing.Parsing;
 import de.pannous.xvantage.core.parsing.ArrayParsing;
-import de.pannous.xvantage.core.util.BiMap;
 import de.pannous.xvantage.core.util.Helper;
 import de.pannous.xvantage.core.util.MapEntry;
 import java.io.StringReader;
@@ -254,8 +253,7 @@ public class ObjectStringTransformer {
     }
 
     public <T> void writeObject(Binding<T> binding, T oneObject, TransformerHandler transformerHandler) throws Exception {
-        BiMap<Long, T> map = dataPool.getData(binding.getClassObject());
-        Long id = map.getSecond(oneObject);
+        Long id = dataPool.getId(oneObject);
         if (id != null)
             atts.addAttribute("", "", "id", "", Long.toString(id));
 
@@ -342,13 +340,9 @@ public class ObjectStringTransformer {
                 }
             }
         } else {
-            BiMap<Long, Object> ids = dataPool.getData(clazz);
-
-            if (ids != null) {
-                Long id = ids.getSecond(object);
-                if (id != null) {
-                    object = Long.toString(id);
-                }
+            Long id = dataPool.getId(object);
+            if (id != null) {
+                object = Long.toString(id);
             }
 
             String str = object == null ? "" : object.toString();

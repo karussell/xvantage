@@ -1,6 +1,5 @@
 package de.pannous.xvantage.core;
 
-import de.pannous.xvantage.core.util.BiMap;
 import de.pannous.xvantage.core.util.test.SimpleObj;
 import de.pannous.xvantage.core.util.test.ComplexObject;
 import de.pannous.xvantage.core.util.test.Person;
@@ -99,7 +98,7 @@ public class XvantageTest extends XvantageTester {
 
     @Test
     public void testWrite() {
-        BiMap<Long, SimpleObj> map = dataPool.getData(SimpleObj.class);
+        Map<Long, SimpleObj> map = dataPool.getData(SimpleObj.class);
         map.put(0L, new SimpleObj("test"));
         StringWriter writer = new StringWriter();
         xadv.mount("/path/myobject", SimpleObj.class);
@@ -124,7 +123,7 @@ public class XvantageTest extends XvantageTester {
 
     @Test
     public void testWriteTwoObjects() {
-        BiMap<Long, SimpleObj> map = dataPool.getData(SimpleObj.class);
+       Map<Long, SimpleObj> map = dataPool.getData(SimpleObj.class);
         map.put(0L, new SimpleObj("test"));
         map.put(1L, new SimpleObj("test2"));
 
@@ -155,14 +154,14 @@ public class XvantageTest extends XvantageTester {
 
     @Test
     public void testWriteTwoRelatedObjects() {
-        BiMap<Long, Person> pMap = dataPool.getData(Person.class);
+       Map<Long, Person> pMap = dataPool.getData(Person.class);
 
         Person p1 = new Person("p1", 1L);
         Person p2 = new Person("p2", 2L);
         pMap.put(p1.getId(), p1);
         pMap.put(p2.getId(), p2);
 
-        BiMap<Long, Task> tMap = dataPool.getData(Task.class);
+        Map<Long, Task> tMap = dataPool.getData(Task.class);
         Task t1 = new Task("t1", 1L);
         tMap.put(t1.getId(), t1);
 
@@ -208,14 +207,14 @@ public class XvantageTest extends XvantageTester {
 
     @Test
     public void testWriteTwoRelatedObjectsWithOneMount() {
-        BiMap<Long, Person> pMap = dataPool.getData(Person.class);
+        Map<Long, Person> pMap = dataPool.getData(Person.class);
 
         Person p1 = new Person("p1", 1L);
         Person p2 = new Person("p2", 2L);
         pMap.put(p1.getId(), p1);
         pMap.put(p2.getId(), p2);
 
-        BiMap<Long, Task> tMap = dataPool.getData(Task.class);
+        Map<Long, Task> tMap = dataPool.getData(Task.class);
         Task t1 = new Task("t1", 1L);
         tMap.put(t1.getId(), t1);
 

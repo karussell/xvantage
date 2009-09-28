@@ -1,6 +1,5 @@
 package de.pannous.xvantage.core;
 
-import de.pannous.xvantage.core.util.BiMap;
 import de.pannous.xvantage.core.util.Helper;
 import de.pannous.xvantage.core.util.test.ObjectWithCollections;
 import de.pannous.xvantage.core.util.test.Person;
@@ -24,7 +23,6 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 /**
- *
  * @author Peter Karich, peat_hal 'at' users 'dot' sourceforge 'dot' net
  */
 public class ObjectStringTransformerTest extends XvantageTester {
@@ -176,7 +174,7 @@ public class ObjectStringTransformerTest extends XvantageTester {
 
     @Test
     public void testParseObjectReferences() throws Exception {
-        BiMap<Long, Task> map = dataPool.getData(Task.class);
+        Map<Long, Task> map = dataPool.getData(Task.class);
         Task task = new Task("task1", 1L);
         map.put(1L, task);
 
@@ -195,7 +193,7 @@ public class ObjectStringTransformerTest extends XvantageTester {
 
     @Test
     public void testParseKnownToOneObject() throws Exception {
-        BiMap<Long, Task> map = dataPool.getData(Task.class);
+        Map<Long, Task> map = dataPool.getData(Task.class);
         Task task = new Task("task1", 4L);
         map.put(4L, task);
 
@@ -256,7 +254,7 @@ public class ObjectStringTransformerTest extends XvantageTester {
         p1.getTasks().add(new Task("t1", 1L));
         p1.setMainTask(new Task("t4", 4L));
 
-        BiMap<Long, Person> persons = dataPool.getData(Person.class);
+        Map<Long, Person> persons = dataPool.getData(Person.class);
         persons.put(p1.getId(), p1);
 
         objectParser.writeObjectAsProperty(p1, Person.class, "p", transformerHandler);
@@ -276,7 +274,8 @@ public class ObjectStringTransformerTest extends XvantageTester {
         };
         Binding bind = newBinding("/p/", Person.class);
         bind.ignoreMethod("getName");
-        dataPool.getData(Person.class).put(p1.getId(), p1);
+        Map<Long, Person> objects = (Map<Long, Person>) dataPool.getData(p1.getClass());
+        objects.put(p1.getId(), p1);
         objectParser.writeObject(bind, p1, transformerHandler);
         assertEquals("<person id=\"1\"><mainTask></mainTask><tasks/><id>1</id></person>", writer.toString());
     }
