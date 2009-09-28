@@ -1,13 +1,17 @@
 package de.pannous.xvantage.core.util;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
 /**
- *
+ * Is a map implementation where value to key mapping is included.
+ * In this implementation the values collection is a set (no duplicates allowed).
+ * So one value could NOT have several keys like in e.g. HashMap.
+ * 
  * @author Peter Karich, peat_hal 'at' users 'dot' sourceforge 'dot' net
  */
 public class BiMap<V1, V2> implements Map<V1, V2> {
@@ -16,8 +20,20 @@ public class BiMap<V1, V2> implements Map<V1, V2> {
     private Map<V1, V2> map = new HashMap();
 
     public V2 put(V1 v1, V2 v2) {
-        getV1.put(v2, v1);
-        return map.put(v1, v2);
+        V1 oldV1 = getV1.put(v2, v1);
+        V2 oldV2 = map.put(v1, v2);
+
+        if (oldV1 != null) {
+            if (oldV1 != v1)
+                map.remove(oldV1);
+        }
+
+        if (oldV2 != null) {
+            if (oldV2 != v2)
+                getV1.remove(oldV2);
+        }
+
+        return oldV2;
     }
 
     public V2 get(Object v1) {
@@ -33,7 +49,7 @@ public class BiMap<V1, V2> implements Map<V1, V2> {
     }
 
     public Map<V2, V1> getAllSecondToFirst() {
-        return getV1;
+        return Collections.unmodifiableMap(getV1);
     }
 
     public int size() {

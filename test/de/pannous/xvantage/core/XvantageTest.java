@@ -175,7 +175,7 @@ public class XvantageTest extends XvantageTester {
 
         xadv.mount("/root/", Person.class);
         xadv.mount("/root/", Task.class);
-        tmpResult1 = xadv.saveObjects( new StringWriter(), dataPool).toString();
+        tmpResult1 = xadv.saveObjects(new StringWriter(), dataPool).toString();
 
         assertTrue(tmpResult1.contains(HEADER));
         assertTrue(tmpResult1.contains("<person id=\"2\">"));
@@ -227,7 +227,7 @@ public class XvantageTest extends XvantageTester {
         t1.getPersons().add(p2);
 
         xadv.mount("/root/", Person.class);
-        String str = xadv.saveObjects( new StringWriter(), dataPool).toString();
+        String str = xadv.saveObjects(new StringWriter(), dataPool).toString();
 
         assertTrue(str.contains(HEADER));
         assertTrue(str.contains("<tasks valueClass=\"de.pannous.xvantage.core.util.test.Task\">\n<value>1</value>\n</tasks>"));
@@ -253,7 +253,7 @@ public class XvantageTest extends XvantageTester {
 
         xadv.mount("/t/", Task.class);
 
-        tmpResult1 = xadv.saveObjects( new StringWriter(), dataPool).toString();
+        tmpResult1 = xadv.saveObjects(new StringWriter(), dataPool).toString();
 
         assertEquals(4, Helper.countPattern(tmpResult1, "<task id=\""));
         assertEquals(1, Helper.countPattern(tmpResult1, "<parentTask>4</parentTask>"));
@@ -295,13 +295,19 @@ public class XvantageTest extends XvantageTester {
     public void testReadWithAlreadyExistingTask_XmlDefinitionWillOverwriteExisting() throws Exception {
         testWriteHeavyReferenced();
 
-        Task t1 = new Task("t1", 1L);
+        Task t1 = new Task("t1old", 1L);
         Map<Long, Task> tasks = dataPool.getData(Task.class);
+        assertEquals("t1", tasks.get(1L).getName());
         tasks.put(t1.getId(), t1);
+        assertEquals("t1old", tasks.get(1L).getName());
+        assertEquals(4, tasks.size());
+
+        // finally read ..
         DataPool pool = xadv.readObjects(new StringReader(tmpResult1), dataPool);
         Map<Long, Task> map = pool.getData(Task.class);
 
-        assertEquals("Should create new task if present in xml", 5, map.size());
-        assertEquals(t1, map.get(1L));
+        assertEquals("Should create new task if present in xml", 4, map.size());
+        assertEquals("reference stays", t1, map.get(1L));
+        assertEquals("but properties will be overwritten", "t1", map.get(1L).getName());
     }
 }

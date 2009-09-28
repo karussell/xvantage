@@ -15,6 +15,8 @@ public interface DataPool {
     <T> Map<Long, T> getData(Class<T> clazz);
 
     /**
+     * This method is necessary to write objects
+     * 
      * @return the id of the specfied object
      */
     Long getId(Object object);
