@@ -73,7 +73,7 @@ There are X, because of the X in xvantage ;-)
   License
 ===========
 
-Public Domain, see http://en.wikipedia.org/wiki/Public_domain
+no license and free source code or public domain, see http://en.wikipedia.org/wiki/Public_domain
 
   Xvantage compared to ...
 ============================
