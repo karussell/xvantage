@@ -1,7 +1,7 @@
   Welcome to the xvantage project!
 ====================================
 
-Please give your feedback to peathal@yaaahoooo.com (some a and o too much ;-))
+Please give your feedback to peathal@yaaahoooo.de (some a and o too much ;-))
 
 Xvantage is yet another xml serializer and deserializer without much configuration
 hassle. It is well suited if you have java objects and want to serialize them
