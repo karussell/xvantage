@@ -18,6 +18,8 @@ import java.lang.reflect.Constructor;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXParseException;
 import org.xml.sax.XMLReader;
@@ -39,6 +41,7 @@ public class Xvantage {
         objParsing = new ObjectParsing();
         objWriting = new ObjectWriting();
         bindingTree = new BindingTree(objWriting);
+        setLogLevel(Level.WARNING);
     }
 
     /**
@@ -185,6 +188,15 @@ public class Xvantage {
      */
     public void putWriting(Class clazz, Writing w) {
         objWriting.putWriting(clazz, w);
+    }
+
+    public void putAlias(Class clazz, String name) {
+        objParsing.putAlias(clazz, name);
+        objWriting.putAlias(clazz, name);
+    }
+
+    public void setLogLevel(Level level) {
+        Logger.getLogger(getClass().getPackage().getName()).setLevel(level);
     }
 
     /**

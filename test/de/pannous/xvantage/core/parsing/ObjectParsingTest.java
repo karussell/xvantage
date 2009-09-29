@@ -1,9 +1,9 @@
 package de.pannous.xvantage.core.parsing;
 
-import de.pannous.xvantage.core.*;
+import de.pannous.xvantage.core.Binding;
+import de.pannous.xvantage.core.XvantageTester;
 import de.pannous.xvantage.core.util.Helper;
-import de.pannous.xvantage.core.util.test.ConstraintTF;
-import de.pannous.xvantage.core.util.test.EventTF;
+import de.pannous.xvantage.core.util.test.ObjectWithCollectionOfCollection;
 import de.pannous.xvantage.core.util.test.ObjectWithCollections;
 import de.pannous.xvantage.core.util.test.Person;
 import de.pannous.xvantage.core.util.test.SimpleObj;
@@ -13,7 +13,6 @@ import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -25,8 +24,6 @@ import javax.xml.transform.stream.StreamResult;
 import org.junit.Before;
 import org.junit.Test;
 import static org.junit.Assert.*;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
 
 /**
  * @author Peter Karich, peat_hal 'at' users 'dot' sourceforge 'dot' net
@@ -179,7 +176,7 @@ public class ObjectParsingTest extends XvantageTester {
     }
 
     @Test
-    public void testParseKnownToOneObject() throws Exception {
+    public void testParseKnownObjectInToOneRelationship() throws Exception {
         Map<Long, Task> map = dataPool.getData(Task.class);
         Task task = new Task("task1", 4L);
         map.put(4L, task);
@@ -193,5 +190,19 @@ public class ObjectParsingTest extends XvantageTester {
         assertEquals(2, p1.getTasks().size());
 
         assertTrue("should create new task", task == p1.getMainTask());
+    }
+
+    @Test
+    public void testParseCollectionOfCollection() throws Exception {
+        InputStream iStream = getClass().getResourceAsStream("parseCollectionOfCollection.xml");
+        Binding<ObjectWithCollectionOfCollection> bind = newBinding("/obj", ObjectWithCollectionOfCollection.class);
+
+        Entry<Long, ObjectWithCollectionOfCollection> res = parsing.parseObject(bind, Helper.getAsString(iStream, 1024));
+
+        ObjectWithCollectionOfCollection p1 = res.getValue();
+        assertEquals(1, p1.getField().size());
+        assertEquals(2, p1.getField().get(0).size());
+        assertEquals("test1", p1.getField().get(0).get(0).getName());
+        assertEquals("test2", p1.getField().get(0).get(1).getName());
     }
 }

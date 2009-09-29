@@ -78,7 +78,7 @@ public class ObjectWritingTest extends XvantageTester {
         al.add("Test2");
 
         writing.writeObject(al, ArrayList.class, "list", transformerHandler);
-        assertEquals("<list valueClass=\"string\">" +
+        assertEquals("<list valueClass=\"String\">" +
                 "<value>Test1</value>" +
                 "<value>Test2</value>" +
                 "</list>", writer.toString());
@@ -89,7 +89,7 @@ public class ObjectWritingTest extends XvantageTester {
         String[] array = {"Test1", "Test2"};
 
         writing.writeObject(array, String[].class, "list", transformerHandler);
-        assertEquals("<list valueClass=\"string\">" +
+        assertEquals("<list valueClass=\"String\">" +
                 "<value>Test1</value>" +
                 "<value>Test2</value>" +
                 "</list>", writer.toString());
@@ -104,8 +104,8 @@ public class ObjectWritingTest extends XvantageTester {
         writing.writeObject(map, Map.class, "list", transformerHandler);
 
         String str = writer.toString();
-        assertTrue(str.contains("keyClass=\"integer\""));
-        assertTrue(str.contains("valueClass=\"string\""));
+        assertTrue(str.contains("keyClass=\"Integer\""));
+        assertTrue(str.contains("valueClass=\"String\""));
         assertTrue(str.contains("<list"));
         assertTrue(str.contains("<entry><key>1</key><value>test</value></entry>"));
         assertTrue(str.contains("<entry><key>2</key><value>test2</value></entry>"));

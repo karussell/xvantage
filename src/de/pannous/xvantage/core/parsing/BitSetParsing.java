@@ -11,7 +11,9 @@ public class BitSetParsing implements Parsing {
     public Object parse(Node node) {
         String bitSetAsStr = node.getTextContent();
         // remove the {}
-        bitSetAsStr = bitSetAsStr.substring(1, bitSetAsStr.length() - 1);
+        int start = bitSetAsStr.indexOf("{");
+        int end = bitSetAsStr.indexOf("}");
+        bitSetAsStr = bitSetAsStr.substring(start + 1, end);
         BitSet bitSet = new BitSet();
         for (String str : bitSetAsStr.split(",")) {
             str = str.trim();

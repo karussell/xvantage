@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.logging.Logger;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -39,6 +40,7 @@ public class ObjectParsing extends ObjectStringTransformer {
     private Class<? extends List> defaultListImpl = ArrayList.class;
     private DocumentBuilder builder;
     private long idCounter = 0;
+    private Logger logger = Logger.getLogger(getClass().getName());
 
     public ObjectParsing() {
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
@@ -135,8 +137,17 @@ public class ObjectParsing extends ObjectStringTransformer {
                 }
                 return obj;
             } catch (NumberFormatException ex) {
-                return null;
             }
+            if (node.getChildNodes().getLength() == 0)
+                return null;
+
+            try {
+                Object obj = Helper.getPrivateConstructor(tmpClazz).newInstance();
+                fillWithProperties(new Binding("/unknown/", tmpClazz), obj, node.getChildNodes());
+                return obj;
+            } catch (Exception ex) {
+                throw new UnsupportedOperationException(ex);
+            }            
         }
         return parsing.parse(node);
     }
@@ -153,8 +164,10 @@ public class ObjectParsing extends ObjectStringTransformer {
             if (node.getNodeType() != Node.ELEMENT_NODE)
                 continue;
             Method m = binding.getSetterMethods().get(node.getNodeName());
-            if (m == null)
+            if (m == null) {
+                logger.info("No setter found for:" + node.getNodeName());
                 continue;
+            }
             if (binding.shouldIgnore(m.getName()))
                 continue;
 
@@ -247,7 +260,7 @@ public class ObjectParsing extends ObjectStringTransformer {
     }
 
     private Class getClassFromAlias(String classAlias) throws ClassNotFoundException {
-        Class clazz = stringToPrimitiveClasses.get(classAlias.toLowerCase());
+        Class clazz = classToString.getSecond(classAlias);
         if (clazz == null)
             return Class.forName(classAlias);
 
@@ -296,34 +309,9 @@ public class ObjectParsing extends ObjectStringTransformer {
 
             put(LinkedList.class, linkedListParse);
 
-            put(String.class, stringParse);
+            put(String.class, STRING_PARSING);
 
-            put(BitSet.class, bitSetParse);
-        }
-    };
-    // avoid long class names for primitive types
-    private Map<String, Class> stringToPrimitiveClasses = new HashMap<String, Class>() {
-
-        {
-            put("byte", Byte.class);
-
-            put("double", Double.class);
-
-            put("float", Float.class);
-
-            put("long", Long.class);
-
-            put("integer", Integer.class);
-
-            put("char", Character.class);
-
-            put("short", Short.class);
-
-            put("boolean", Boolean.class);
-
-            put("string", String.class);
-
-            put("bitSet", BitSet.class);
+            put(BitSet.class, BITSET_PARSING);
         }
     };
 
@@ -436,8 +424,8 @@ public class ObjectParsing extends ObjectStringTransformer {
             return linkedMap;
         }
     };
-    private static Parsing stringParse = new StringParsing();
-    private static Parsing bitSetParse = new BitSetParsing();
+    public static Parsing STRING_PARSING = new StringParsing();
+    public static Parsing BITSET_PARSING = new BitSetParsing();
     private Parsing linkedListParse = new LinkedListParsing(this);
     private ArrayParsing arrayParse = new ArrayParsing(this);
 }

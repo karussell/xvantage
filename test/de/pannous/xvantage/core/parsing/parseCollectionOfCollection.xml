@@ -1,0 +1,13 @@
+
+<obj>
+    <field valueClass="java.util.ArrayList">
+        <value valueClass="de.pannous.xvantage.core.util.test.SimpleObj">
+            <value>
+                <name>test1</name>
+            </value>
+            <value>
+                <name>test2</name>
+            </value>
+        </value>
+    </field>
+</obj>

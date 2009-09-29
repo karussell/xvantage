@@ -1,5 +1,8 @@
 package de.pannous.xvantage.core;
 
+import de.pannous.xvantage.core.util.BiMap;
+import java.util.BitSet;
+import java.util.logging.Logger;
 import org.xml.sax.helpers.AttributesImpl;
 
 /**
@@ -25,6 +28,43 @@ public abstract class ObjectStringTransformer {
     protected DataPool dataPool;
     protected AttributesImpl atts = new AttributesImpl();
     protected boolean skipNullProperty = false;
+    protected Logger logger = Logger.getLogger(getClass().getName());
+    // avoid long class names for primitive types
+    protected BiMap<Class, String> classToString = new BiMap<Class, String>();
+
+    public ObjectStringTransformer() {
+        putAlias(Byte.class, "Byte");
+        putAlias(byte.class, "byte");
+
+        putAlias(Double.class, "Double");
+        putAlias(double.class, "double");
+        putAlias(Float.class, "Float");
+        putAlias(float.class, "float");
+
+        putAlias(Long.class, "Long");
+        putAlias(long.class, "long");
+        putAlias(Integer.class, "Integer");
+        putAlias(int.class, "int");
+
+        putAlias(Character.class, "Character");
+        putAlias(char.class, "char");
+
+        putAlias(Short.class, "Short");
+        putAlias(short.class, "short");
+
+        putAlias(Boolean.class, "Boolean");
+        putAlias(boolean.class, "boolean");
+
+        putAlias(String.class, "String");
+
+        putAlias(BitSet.class, "BitSet");
+    }
+
+    public void putAlias(Class clazz, String str) {
+        String old = classToString.put(clazz, str);
+        if (old != null)
+            logger.warning("Overwriting alias:" + old + "(class: " + clazz + ")");
+    }
 
     public void init(DataPool dataPool) {
         this.dataPool = dataPool;

@@ -14,38 +14,7 @@ import org.xml.sax.SAXException;
 /**
  * @author Peter Karich, peat_hal 'at' users 'dot' sourceforge 'dot' net
  */
-public class ObjectWriting extends ObjectStringTransformer {
-
-    private Map<Class, String> classToString = new HashMap<Class, String>() {
-
-        {
-            put(Byte.class, "byte");
-            put(byte.class, "byte");
-
-            put(Double.class, "double");
-            put(double.class, "double");
-            put(Float.class, "float");
-            put(float.class, "float");
-
-            put(Long.class, "long");
-            put(long.class, "long");
-            put(Integer.class, "integer");
-            put(int.class, "integer");
-
-            put(Character.class, "char");
-            put(char.class, "char");
-
-            put(Short.class, "short");
-            put(short.class, "short");
-
-            put(Boolean.class, "boolean");
-            put(boolean.class, "boolean");
-
-            put(String.class, "string");
-
-            put(BitSet.class, "bitSet");
-        }
-    };
+public class ObjectWriting extends ObjectStringTransformer {   
 
     private String getAliasFromClass(Class clazz) {
         String res = classToString.get(clazz);
@@ -54,45 +23,44 @@ public class ObjectWriting extends ObjectStringTransformer {
 
         return res;
     }
-    private Writing writingToString = new Writing() {
+    public static Writing WRITING_TO_STRING = new Writing() {
 
         public void toString(Object object, TransformerHandler transformerHandler) throws Exception {
             String str = object.toString();
             transformerHandler.characters(str.toCharArray(), 0, str.length());
         }
     };
-
     // without collections because they have a special handling: Collection.class.isAssignableFrom(clazz)
     private HashMap<Class, Writing> selectWriteMethodMap = new HashMap<Class, Writing>() {
 
         {
-            put(Byte.class, writingToString);
-            put(byte.class, writingToString);
+            put(Byte.class, WRITING_TO_STRING);
+            put(byte.class, WRITING_TO_STRING);
 
-            put(Double.class, writingToString);
-            put(double.class, writingToString);
+            put(Double.class, WRITING_TO_STRING);
+            put(double.class, WRITING_TO_STRING);
 
-            put(Float.class, writingToString);
-            put(float.class, writingToString);
+            put(Float.class, WRITING_TO_STRING);
+            put(float.class, WRITING_TO_STRING);
 
-            put(Long.class, writingToString);
-            put(long.class, writingToString);
+            put(Long.class, WRITING_TO_STRING);
+            put(long.class, WRITING_TO_STRING);
 
-            put(Integer.class, writingToString);
-            put(int.class, writingToString);
+            put(Integer.class, WRITING_TO_STRING);
+            put(int.class, WRITING_TO_STRING);
 
-            put(Short.class, writingToString);
-            put(short.class, writingToString);
+            put(Short.class, WRITING_TO_STRING);
+            put(short.class, WRITING_TO_STRING);
 
-            put(Boolean.class, writingToString);
-            put(boolean.class, writingToString);
+            put(Boolean.class, WRITING_TO_STRING);
+            put(boolean.class, WRITING_TO_STRING);
 
-            put(Character.class, writingToString);
-            put(char.class, writingToString);
+            put(Character.class, WRITING_TO_STRING);
+            put(char.class, WRITING_TO_STRING);
 
-            put(String.class, writingToString);
+            put(String.class, WRITING_TO_STRING);
 
-            put(BitSet.class, writingToString);
+            put(BitSet.class, WRITING_TO_STRING);
         }
     };
 
