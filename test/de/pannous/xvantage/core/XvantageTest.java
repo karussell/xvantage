@@ -182,12 +182,12 @@ public class XvantageTest extends XvantageTester {
         xvan.mount("/root/", Person.class);
         xvan.mount("/root/", Task.class);
         tmpResult1 = xvan.saveObjects(new StringWriter(), dataPool).toString();
-
+        
         assertTrue(tmpResult1.contains(HEADER));
         assertTrue(tmpResult1.contains("<person id=\"2\">"));
         assertTrue(tmpResult1.contains("<person id=\"1\">"));
-        assertTrue(tmpResult1.contains("<tasks valueClass=\"de.pannous.xvantage.core.util.test.Task\">\n<value>1</value>\n</tasks>"));
-        assertTrue(tmpResult1.contains("<persons valueClass=\"de.pannous.xvantage.core.util.test.Person\">\n<value>1</value>\n<value>2</value>\n</persons>"));
+        assertTrue(tmpResult1.contains("<tasks jc=\"ArrayList\" valueClass=\"task\">\n<value>1</value>\n</tasks>"));
+        assertTrue(tmpResult1.contains("<persons jc=\"ArrayList\" valueClass=\"person\">\n<value>1</value>\n<value>2</value>\n</persons>"));
     }
 
     @Test
@@ -236,8 +236,8 @@ public class XvantageTest extends XvantageTester {
         String str = xvan.saveObjects(new StringWriter(), dataPool).toString();
 
         assertTrue(str.contains(HEADER));
-        assertTrue(str.contains("<tasks valueClass=\"de.pannous.xvantage.core.util.test.Task\">\n<value>1</value>\n</tasks>"));
-        assertFalse(str.contains("<persons valueClass=\"de.pannous.xvantage.core.util.test.Person\">\n<value>1</value>\n<value>2</value>\n</persons>"));
+        assertTrue(str.contains("<tasks jc=\"ArrayList\" valueClass=\"de.pannous.xvantage.core.util.test.Task\">\n<value>1</value>\n</tasks>"));
+        assertFalse(str.contains("<persons jc=\"ArrayList\" valueClass=\"de.pannous.xvantage.core.util.test.Person\">\n<value>1</value>\n<value>2</value>\n</persons>"));
     }
 
     @Test
@@ -317,11 +317,10 @@ public class XvantageTest extends XvantageTester {
         assertEquals("but properties will be overwritten", "t1", map.get(1L).getName());
     }
 
-
     @Test
     public void testCustomParsing() throws Exception {
         InputStream iStream = getClass().getResourceAsStream("complexFromTimeFinder.xml");
-        
+
         xvan.putParsing(ConstraintTF.class, new Parsing() {
 
             public Object parse(Node node) {
@@ -351,7 +350,7 @@ public class XvantageTest extends XvantageTester {
         EventTF ev2 = events.get(2L);
         assertEquals(1, ev1.getConstraints().size());
         assertEquals(1, ev2.getConstraints().size());
-        
+
         Iterator<ConstraintTF> iter = ev1.getConstraints().iterator();
         ConstraintTF ec = iter.next();
         assertEquals("test1", ec.getEvent().getName());

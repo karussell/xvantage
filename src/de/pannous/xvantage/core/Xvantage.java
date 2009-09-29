@@ -61,7 +61,7 @@ public class Xvantage {
 
         try {
             if (dataPool == null) {
-                Constructor<? extends DataPool> c = Helper.getPrivateConstructor(defaultDataPool);
+                Constructor<? extends DataPool> c = Helper.getConstructor(defaultDataPool);
                 dataPool = c.newInstance();
             }
 
@@ -153,7 +153,9 @@ public class Xvantage {
      * @param aClass the class which will be mounted into the path
      */
     public void mount(String path, Class aClass) {
-        bindingTree.mount(new Binding(path, aClass));
+        Binding bind = new Binding(path, aClass);
+        bindingTree.mount(bind);
+        putAlias(aClass, bind.getElementName());
     }
 
     /**

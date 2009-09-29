@@ -55,6 +55,7 @@ there are a lot, because it is a young idea ;-)
  * maybe not so fast
  * maybe not so stable like all the others
  * not thread save, you have to use multiple instances of Xvantage
+ * no arg constructor (at least private), getter and setters are necessary
 
 
   Advantages

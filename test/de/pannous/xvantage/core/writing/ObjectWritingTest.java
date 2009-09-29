@@ -1,20 +1,15 @@
 package de.pannous.xvantage.core.writing;
 
 import de.pannous.xvantage.core.*;
-import de.pannous.xvantage.core.util.Helper;
-import de.pannous.xvantage.core.util.test.ObjectWithCollections;
 import de.pannous.xvantage.core.util.test.ObjectWithNestedObject;
+import de.pannous.xvantage.core.util.test.ObjectWithPolymorph;
 import de.pannous.xvantage.core.util.test.Person;
-import de.pannous.xvantage.core.util.test.SimpleObj;
 import de.pannous.xvantage.core.util.test.Task;
-import java.io.InputStream;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Transformer;
 import javax.xml.transform.sax.SAXTransformerFactory;
@@ -140,7 +135,7 @@ public class ObjectWritingTest extends XvantageTester {
         Map<Long, Person> objects = (Map<Long, Person>) dataPool.getData(p1.getClass());
         objects.put(p1.getId(), p1);
         writing.writeObject(bind, p1, transformerHandler);
-        assertEquals("<person id=\"1\"><mainTask/><tasks/><id>1</id></person>", writer.toString());
+        assertEquals("<person id=\"1\"><mainTask/><tasks jc=\"ArrayList\"/><id>1</id></person>", writer.toString());
     }
 
     @Test
@@ -167,5 +162,26 @@ public class ObjectWritingTest extends XvantageTester {
 
         writing.writeObject(bind, obj, transformerHandler);
         assertEquals("<o id=\"1\"><simpleObject><name>p1</name></simpleObject><emptyObject/></o>", writer.toString());
+    }
+
+    @Test
+    public void testWriteObjectWithPropertyDifferentToReturnType() throws Exception {
+        ObjectWithPolymorph dad = new ObjectWithPolymorph();
+        ObjectWithPolymorph obj = new ObjectWithPolymorph();
+        dad.setObject(obj);
+
+        Binding bind = newBinding("/root/o", ObjectWithPolymorph.class);
+
+        Map<Long, ObjectWithPolymorph> objects = dataPool.getData((Class) obj.getClass());
+        objects.put(1L, obj);
+
+        obj.getCollection().add("String1");
+        obj.getCollection().add((Integer) 4);
+
+        writing.setSkipNullProperty(true);
+        writing.writeObject(bind, obj, transformerHandler);
+        String str = writer.toString();
+        
+        assertTrue(str.contains("<collection jc=\"ArrayList\" valueClass=\"String\"><value>String1</value><value jc=\"Integer\">4</value></collection>"));
     }
 }

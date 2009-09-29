@@ -5,6 +5,7 @@ import de.pannous.xvantage.core.XvantageTester;
 import de.pannous.xvantage.core.util.Helper;
 import de.pannous.xvantage.core.util.test.ObjectWithCollectionOfCollection;
 import de.pannous.xvantage.core.util.test.ObjectWithCollections;
+import de.pannous.xvantage.core.util.test.ObjectWithPolymorph;
 import de.pannous.xvantage.core.util.test.Person;
 import de.pannous.xvantage.core.util.test.SimpleObj;
 import de.pannous.xvantage.core.util.test.Task;
@@ -13,6 +14,7 @@ import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -204,5 +206,20 @@ public class ObjectParsingTest extends XvantageTester {
         assertEquals(2, p1.getField().get(0).size());
         assertEquals("test1", p1.getField().get(0).get(0).getName());
         assertEquals("test2", p1.getField().get(0).get(1).getName());
+    }
+
+    @Test
+    public void testReadObjectWithPropertyDifferentToReturnType() throws Exception {
+        Binding bind = newBinding("/o", ObjectWithPolymorph.class);
+
+        parsing.setSkipNullProperty(true);
+        Entry<Long, Object> entry = parsing.parseObject(bind,
+                "<o><collection jc=\"ArrayList\" valueClass=\"String\">" +
+                "<value>String1</value><value jc=\"Integer\">4</value></collection></o>");
+        ObjectWithPolymorph o = (ObjectWithPolymorph) entry.getValue();
+        assertEquals(ArrayList.class, o.getCollection().getClass());
+        Iterator iter = o.getCollection().iterator();
+        assertEquals(String.class, iter.next().getClass());
+        assertEquals(Integer.class, iter.next().getClass());
     }
 }

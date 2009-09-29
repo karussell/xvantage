@@ -14,7 +14,7 @@ import org.xml.sax.SAXException;
 /**
  * @author Peter Karich, peat_hal 'at' users 'dot' sourceforge 'dot' net
  */
-public class ObjectWriting extends ObjectStringTransformer {   
+public class ObjectWriting extends ObjectStringTransformer {
 
     private String getAliasFromClass(Class clazz) {
         String res = classToString.get(clazz);
@@ -65,7 +65,9 @@ public class ObjectWriting extends ObjectStringTransformer {
     };
 
     public void putWriting(Class clazz, Writing w) {
-        selectWriteMethodMap.put(clazz, w);
+        Writing old = selectWriteMethodMap.put(clazz, w);
+        if (old != null)
+            logger.warning("Overwriting writing:" + old + "(class: " + clazz + ")");
     }
 
     public <T> void writeObject(Binding<T> binding, T oneObject, TransformerHandler transformerHandler) throws Exception {
@@ -80,9 +82,6 @@ public class ObjectWriting extends ObjectStringTransformer {
                 continue;
 
             Object result = tmpEntry.getValue().invoke(oneObject);
-            if (result == null && skipNullProperty)
-                continue;
-
             writeObject(result, tmpEntry.getValue().getReturnType(), tmpEntry.getKey(), transformerHandler);
         }
 
@@ -105,7 +104,19 @@ public class ObjectWriting extends ObjectStringTransformer {
     public void writeObject(Object object, Class clazz,
             String elementName, TransformerHandler transformerHandler) throws Exception {
 
+        if (object == null && skipNullProperty)
+            return;
+
         atts.clear();
+
+        if (object != null) {
+            Class entryClass = object.getClass();
+            // print arrayList if list (assignable because of 'extends') but do not add jc='Long' if 'long'
+            if (!entryClass.equals(clazz) && !samePrimitive(entryClass, clazz)) {
+                atts.addAttribute("", "", javaClass, "", getAliasFromClass(entryClass));
+            }
+        }
+
         Writing writing = selectWriteMethodMap.get(clazz);
         if (writing != null) {
             transformerHandler.startElement("", "", elementName, atts);
@@ -122,13 +133,15 @@ public class ObjectWriting extends ObjectStringTransformer {
                 transformerHandler.startElement("", "", elementName, atts);
             } else {
                 boolean firstEntry = true;
+                Class firstValueClass = null;
                 for (Object innerObj : array) {
                     if (firstEntry) {
                         firstEntry = false;
-                        atts.addAttribute("", "", valueClassStr, "", getAliasFromClass(innerObj.getClass()));
+                        firstValueClass = innerObj.getClass();
+                        atts.addAttribute("", "", valueClassStr, "", getAliasFromClass(firstValueClass));
                         transformerHandler.startElement("", "", elementName, atts);
                     }
-                    writeObject(innerObj, innerObj.getClass(), valueStr, transformerHandler);
+                    writeObject(innerObj, firstValueClass, valueStr, transformerHandler);
                 }
             }
         } else if (Collection.class.isAssignableFrom(clazz)) {
@@ -140,13 +153,15 @@ public class ObjectWriting extends ObjectStringTransformer {
                 transformerHandler.startElement("", "", elementName, atts);
             } else {
                 boolean firstEntry = true;
+                Class firstValueClass = null;
                 for (Object innerObj : (Iterable) object) {
                     if (firstEntry) {
                         firstEntry = false;
-                        atts.addAttribute("", "", valueClassStr, "", getAliasFromClass(innerObj.getClass()));
+                        firstValueClass = innerObj.getClass();
+                        atts.addAttribute("", "", valueClassStr, "", getAliasFromClass(firstValueClass));
                         transformerHandler.startElement("", "", elementName, atts);
                     }
-                    writeObject(innerObj, innerObj.getClass(), valueStr, transformerHandler);
+                    writeObject(innerObj, firstValueClass, valueStr, transformerHandler);
                 }
             }
         } else if (Map.class.isAssignableFrom(clazz)) {
@@ -158,18 +173,23 @@ public class ObjectWriting extends ObjectStringTransformer {
                 transformerHandler.startElement("", "", elementName, atts);
             } else {
                 boolean firstEntry = true;
+                Class firstKeyClass = null;
+                Class firstValueClass = null;
                 for (Object innerObj : map.entrySet()) {
                     Entry entry = (Entry) innerObj;
                     if (firstEntry) {
                         firstEntry = false;
-                        atts.addAttribute("", "", valueClassStr, "", getAliasFromClass(entry.getValue().getClass()));
-                        atts.addAttribute("", "", keyClassStr, "", getAliasFromClass(entry.getKey().getClass()));
+                        firstKeyClass = entry.getKey().getClass();
+                        firstValueClass = entry.getValue().getClass();
+                        atts.addAttribute("", "", keyClassStr, "", getAliasFromClass(firstKeyClass));
+                        atts.addAttribute("", "", valueClassStr, "", getAliasFromClass(firstValueClass));
                         transformerHandler.startElement("", "", elementName, atts);
                         atts.clear();
                     }
                     transformerHandler.startElement("", "", entryStr, atts);
-                    writeObject(entry.getKey(), entry.getKey().getClass(), keyStr, transformerHandler);
-                    writeObject(entry.getValue(), entry.getValue().getClass(), valueStr, transformerHandler);
+
+                    writeObject(entry.getKey(), firstKeyClass, keyStr, transformerHandler);
+                    writeObject(entry.getValue(), firstValueClass, valueStr, transformerHandler);
                     transformerHandler.endElement("", "", entryStr);
                 }
             }
@@ -191,7 +211,22 @@ public class ObjectWriting extends ObjectStringTransformer {
                 }
             }
         }
-
         transformerHandler.endElement("", "", elementName);
+    }
+
+    public void writeObject(Object object, Class expectedClass, Class entryClass,
+            String elementName, TransformerHandler transformerHandler) throws Exception {
+
+        writeObject(object, expectedClass, elementName, transformerHandler);
+    }
+
+    /**
+     * @return true if long==Long, int==Integer, byte==Byte, float==Float, Double==double
+     */
+    boolean samePrimitive(Class entryClass, Class clazz) {
+        String str = classToString.get(entryClass);
+        if (str == null)
+            return false;
+        return str.equalsIgnoreCase(classToString.get(clazz));
     }
 }

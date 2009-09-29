@@ -36,7 +36,7 @@ public class HelperTest {
     @Test
     public void testPrivateConstructor() {
         try {
-            Constructor<SimpleObj> c = Helper.getPrivateConstructor(SimpleObj.class);
+            Constructor<SimpleObj> c = Helper.getConstructor(SimpleObj.class);
             assertNotNull(c);
             c.newInstance();
         } catch (Exception ex) {

@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.logging.Logger;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -40,7 +39,6 @@ public class ObjectParsing extends ObjectStringTransformer {
     private Class<? extends List> defaultListImpl = ArrayList.class;
     private DocumentBuilder builder;
     private long idCounter = 0;
-    private Logger logger = Logger.getLogger(getClass().getName());
 
     public ObjectParsing() {
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
@@ -101,7 +99,7 @@ public class ObjectParsing extends ObjectStringTransformer {
 
         if (obj == null) {
             // object was already earlier referenced (TODO how to detect duplicate ids?)
-            Constructor c = Helper.getPrivateConstructor(clazz);
+            Constructor c = Helper.getConstructor(clazz);
             if (c == null)
                 throw new IllegalAccessException("Cannot access constructor of " + clazz);
 
@@ -113,24 +111,33 @@ public class ObjectParsing extends ObjectStringTransformer {
         return new MapEntry<Long, T>(id, obj);
     }
 
-    public Object parseObjectAsProperty(Class tmpClazz, Node node) {
-        Parsing parsing = getClassParsing(tmpClazz);
+    public Object parseObjectAsProperty(Class classOfProperty, Node node) {
+        String str = ((Element) node).getAttribute(javaClass);
+        if (str != null && str.length() > 0) {
+            try {
+                classOfProperty = getClassFromAlias(str);
+            } catch (Exception ex) {
+                throw new RuntimeException(ex);
+            }
+        }
+
+        Parsing parsing = getClassParsing(classOfProperty);
         if (parsing == null) {
             // if no collection or no primitive type was found we use a reference
             // e.g. <mainTask>1</mainTask>             
             try {
                 Long id = (Long) longParse.parse(node);
-                Map<Long, Object> map = dataPool.getData(tmpClazz);
+                Map<Long, Object> map = dataPool.getData(classOfProperty);
                 Object obj = map.get(id);
                 if (obj == null) {
                     try {
-                        Constructor c = Helper.getPrivateConstructor(tmpClazz);
+                        Constructor c = Helper.getConstructor(classOfProperty);
                         obj = c.newInstance();
                     } catch (Exception ex) {
                         try {
-                            obj = tmpClazz.newInstance();
+                            obj = classOfProperty.newInstance();
                         } catch (Exception ex2) {
-                            throw new UnsupportedOperationException("Couldn't call default constructor of " + tmpClazz + " node:" + node.getTextContent(), ex2);
+                            throw new UnsupportedOperationException("Couldn't call default constructor of " + classOfProperty + " node:" + node.getTextContent(), ex2);
                         }
                     }
                     map.put(id, obj);
@@ -142,12 +149,12 @@ public class ObjectParsing extends ObjectStringTransformer {
                 return null;
 
             try {
-                Object obj = Helper.getPrivateConstructor(tmpClazz).newInstance();
-                fillWithProperties(new Binding("/unknown/", tmpClazz), obj, node.getChildNodes());
+                Object obj = Helper.getConstructor(classOfProperty).newInstance();
+                fillWithProperties(new Binding("/unknown/", classOfProperty), obj, node.getChildNodes());
                 return obj;
             } catch (Exception ex) {
                 throw new UnsupportedOperationException(ex);
-            }            
+            }
         }
         return parsing.parse(node);
     }
@@ -165,7 +172,8 @@ public class ObjectParsing extends ObjectStringTransformer {
                 continue;
             Method m = binding.getSetterMethods().get(node.getNodeName());
             if (m == null) {
-                logger.info("No setter found for:" + node.getNodeName());
+                String str = node.getParentNode() == null ? "" : node.getParentNode().getNodeName();
+                logger.info("No setter found for:" + node.getNodeName() + " (parent:" + str + ")");
                 continue;
             }
             if (binding.shouldIgnore(m.getName()))

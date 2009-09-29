@@ -193,10 +193,14 @@ public class Helper {
                 method.getReturnType() != void.class && method.getParameterTypes().length == 0;
     }
 
-    public static <T> Constructor<T> getPrivateConstructor(Class<T> aClass) throws NoSuchMethodException {
+    public static <T> Constructor<T> getConstructor(Class<T> aClass) throws NoSuchMethodException {
         Constructor constr = aClass.getDeclaredConstructor();
-        constr.setAccessible(true);
-        return constr;
+        try {
+            constr.setAccessible(true);
+            return constr;
+        } catch (Exception ex) {
+            return aClass.getConstructor();
+        }
     }
 
     public static Element getRootFromString(String str) throws SAXException, IOException, ParserConfigurationException {

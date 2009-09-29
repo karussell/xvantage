@@ -1,6 +1,14 @@
 => publish to "sf maven" as version=0.8
 
- * instead setter/getter use field => instead ignoreMethod use transient
+ * xvantage.putParsing(WeekRasterImpl.class, new Parsing() {...})
+   xvantage.putParsing(WeekRaster.class, new Parsing() {...})
+   only the latter one should be necessary
+ * xvantage.setDefaultImplementation(Map.class, FastMap.class);
+   -> set alias to the one of Map.class
+ * collection parsing: if no setter for fieldA and getCollFieldA != null use a = getCollFieldA instead a = collClazz.newInstance
+   or even addFieldA !
+ * instead setter/getter use field
+ * instead ignoreMethod use transient
  * maventests does not pass! -> cannot find resources?
  * check before reading + after writing if xml is correct (against xsd)
    -> new readObjects + writeOjects with additional xsd argument

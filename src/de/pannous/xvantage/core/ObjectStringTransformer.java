@@ -1,7 +1,11 @@
 package de.pannous.xvantage.core;
 
 import de.pannous.xvantage.core.util.BiMap;
+import de.pannous.xvantage.core.util.Helper;
+import java.util.ArrayList;
 import java.util.BitSet;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.logging.Logger;
 import org.xml.sax.helpers.AttributesImpl;
 
@@ -20,6 +24,13 @@ import org.xml.sax.helpers.AttributesImpl;
  */
 public abstract class ObjectStringTransformer {
 
+    /**
+     * the java class of the node as element property
+     */
+    protected final String javaClass = "jc";
+    /**
+     * the java class of the *subnode* as element property (used in collections)
+     */
     protected final String valueClassStr = "valueClass";
     protected final String keyClassStr = "keyClass";
     protected final String valueStr = "value";
@@ -31,6 +42,7 @@ public abstract class ObjectStringTransformer {
     protected Logger logger = Logger.getLogger(getClass().getName());
     // avoid long class names for primitive types
     protected BiMap<Class, String> classToString = new BiMap<Class, String>();
+    private boolean checkConstructor;
 
     public ObjectStringTransformer() {
         putAlias(Byte.class, "Byte");
@@ -38,6 +50,7 @@ public abstract class ObjectStringTransformer {
 
         putAlias(Double.class, "Double");
         putAlias(double.class, "double");
+
         putAlias(Float.class, "Float");
         putAlias(float.class, "float");
 
@@ -58,10 +71,29 @@ public abstract class ObjectStringTransformer {
         putAlias(String.class, "String");
 
         putAlias(BitSet.class, "BitSet");
+
+        putAlias(ArrayList.class, "ArrayList");
+
+        putAlias(HashMap.class, "HashMap");
+
+        putAlias(HashSet.class, "HashSet");
+
+        setCheckConstructor(true);
     }
 
     public void putAlias(Class clazz, String str) {
+        if (keyStr.equals(str) || valueStr.equals(str) || entryStr.equals(str))
+            throw new IllegalArgumentException("Reserved alias: " + str);
+
+        if (checkConstructor)
+            try {
+                Helper.getConstructor(clazz).newInstance();
+            } catch (Exception ex) {
+                throw new IllegalArgumentException("It should be possible to call non argument constructor from specified class:" + clazz);
+            }
+
         String old = classToString.put(clazz, str);
+
         if (old != null)
             logger.warning("Overwriting alias:" + old + "(class: " + clazz + ")");
     }
@@ -76,6 +108,10 @@ public abstract class ObjectStringTransformer {
 
     public void setSkipNullProperty(boolean skip) {
         this.skipNullProperty = skip;
+    }
+
+    private void setCheckConstructor(boolean b) {
+        checkConstructor = b;
     }
 }
 
