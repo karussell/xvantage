@@ -85,7 +85,7 @@ public class BindingTree {
         tmpRoot.mount(binding);
     }
 
-    public void saveObjects(DataPool pool,
+    public void saveObjects(DataPool dataPool,
             Writer writer,
             String encoding)
             throws SAXException, TransformerConfigurationException {
@@ -104,31 +104,27 @@ public class BindingTree {
         if (root == null)
             return;
 
-        processDoc(pool, transformerHandler);
-        transformerHandler.endDocument();
-    }
-
-    private void processDoc(DataPool dataPool, TransformerHandler transformerHandler)
-            throws SAXException {
-
         if (root.getMountedBindings().size() >= 1)
             throw new UnsupportedOperationException("You cannot mount an object as root. Currently not supported. (More than one will never be supported)");
 
         processNode(root, dataPool, transformerHandler);
+        transformerHandler.endDocument();
     }
     private AttributesImpl atts = new AttributesImpl();
 
-    private void processNode(BindingLeaf rootLeaf, DataPool dataPool, TransformerHandler transformerHandler) throws SAXException {
+    private void processNode(BindingLeaf rootLeaf, DataPool dataPool,
+            TransformerHandler transformerHandler)
+            throws SAXException {
 
-        for (Binding bind : rootLeaf.getMountedBindings()) {
-            Map<Long, Object> tmpMap = dataPool.getData(bind.getClassObject());
+        for (Binding binding : rootLeaf.getMountedBindings()) {
+            Map<Long, Object> tmpMap = dataPool.getData(binding.getClassObject());
             if (tmpMap != null) {
                 for (Object oneObject : tmpMap.values()) {
                     try {
-                        writing.writeObject(bind, oneObject, transformerHandler);
+                        writing.writeObject(binding, oneObject, binding.getClassObject(), binding.getElementName(), transformerHandler);
                     } catch (Exception ex) {
                         throw new UnsupportedOperationException("Couldn't write object " +
-                                oneObject + " (" + bind + ")", ex);
+                                oneObject + " (" + binding + ")", ex);
                     }
                 }
             }

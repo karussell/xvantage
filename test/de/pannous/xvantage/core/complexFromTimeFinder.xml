@@ -5,7 +5,7 @@
             <name>test1</name>
             <constraints valueClass="de.pannous.xvantage.core.util.test.ConstraintTF">
                 <value>
-                    <weight>3.0</weight>
+                    <weight>1.0</weight>
                     <event>1</event>
                 </value>
             </constraints>
@@ -14,7 +14,7 @@
             <name>test2</name>
             <constraints valueClass="de.pannous.xvantage.core.util.test.ConstraintTF">
                 <value>
-                    <weight>1.0</weight>
+                    <weight>2.0</weight>
                     <event>2</event>
                 </value>
             </constraints>

@@ -58,7 +58,7 @@ public class ObjectParsingTest extends XvantageTester {
     @Test
     public void testParseObject() throws Exception {
         Binding<SimpleObj> bind = newBinding("/test", SimpleObj.class);
-        SimpleObj obj = parsing.parseObject(bind, "<test><name>name1</name></test>").getValue();
+        SimpleObj obj = parsing.parseObject(bind, "<test><name>name1</name></test>");
         assertEquals("name1", obj.getName());
     }
 
@@ -134,10 +134,9 @@ public class ObjectParsingTest extends XvantageTester {
     @Test
     public void testParseObjectWithCollection() throws Exception {
         InputStream iStream = getClass().getResourceAsStream("bindingTestParseObjectWithCollection.xml");
-        Binding bind = newBinding("/obj", ObjectWithCollections.class);
+        Binding<ObjectWithCollections> bind = newBinding("/obj", ObjectWithCollections.class);
         String str = Helper.getAsString(iStream, 1024);
-        Entry<Long, ObjectWithCollections> res = parsing.parseObject(bind, str);
-        ObjectWithCollections owc = (ObjectWithCollections) res.getValue();
+        ObjectWithCollections owc = parsing.parseObject(bind, str);
         assertEquals(3, owc.getStringMap().size());
         assertEquals("test1", owc.getStringMap().get(1));
         assertNotNull(owc.getStringArray());
@@ -150,10 +149,9 @@ public class ObjectParsingTest extends XvantageTester {
     @Test
     public void testParseObjectWithEmptyCollection() throws Exception {
         InputStream iStream = getClass().getResourceAsStream("bindingTestParseObjectWithEmptyCollection.xml");
-        Binding bind = newBinding("/obj", ObjectWithCollections.class);
+        Binding<ObjectWithCollections> bind = newBinding("/obj", ObjectWithCollections.class);
         String str = Helper.getAsString(iStream, 1024);
-        Entry<Long, ObjectWithCollections> res = parsing.parseObject(bind, str);
-        ObjectWithCollections owc = res.getValue();
+        ObjectWithCollections owc = parsing.parseObject(bind, str);
         assertEquals(0, owc.getStringSet().size());
         assertEquals(0, owc.getStringMap().size());
     }
@@ -166,9 +164,8 @@ public class ObjectParsingTest extends XvantageTester {
 
         InputStream iStream = getClass().getResourceAsStream("bindingTestParseObjectWithReferences.xml");
         Binding<Person> bind = newBinding("/root/", Person.class);
-        Entry<Long, Person> res = parsing.parseObject(bind, Helper.getAsString(iStream, 1024));
-        assertEquals((Long) 5L, res.getKey());
-        Person p1 = res.getValue();
+        Person p1 = parsing.parseObject(bind, Helper.getAsString(iStream, 1024));
+        assertEquals((Long) 5L, dataPool.getId(p1));
 
         assertEquals(2, p1.getTasks().size());
         assertEquals(1L, p1.getTasks().get(0).getId());
@@ -185,10 +182,7 @@ public class ObjectParsingTest extends XvantageTester {
 
         InputStream iStream = getClass().getResourceAsStream("bindingTestParseObjectWithReferences.xml");
         Binding<Person> bind = newBinding("/root/", Person.class);
-
-        Entry<Long, Person> res = parsing.parseObject(bind, Helper.getAsString(iStream, 1024));
-
-        Person p1 = res.getValue();
+        Person p1 = parsing.parseObject(bind, Helper.getAsString(iStream, 1024));
         assertEquals(2, p1.getTasks().size());
 
         assertTrue("should create new task", task == p1.getMainTask());
@@ -199,9 +193,7 @@ public class ObjectParsingTest extends XvantageTester {
         InputStream iStream = getClass().getResourceAsStream("parseCollectionOfCollection.xml");
         Binding<ObjectWithCollectionOfCollection> bind = newBinding("/obj", ObjectWithCollectionOfCollection.class);
 
-        Entry<Long, ObjectWithCollectionOfCollection> res = parsing.parseObject(bind, Helper.getAsString(iStream, 1024));
-
-        ObjectWithCollectionOfCollection p1 = res.getValue();
+        ObjectWithCollectionOfCollection p1 = parsing.parseObject(bind, Helper.getAsString(iStream, 1024));
         assertEquals(1, p1.getField().size());
         assertEquals(2, p1.getField().get(0).size());
         assertEquals("test1", p1.getField().get(0).get(0).getName());
@@ -212,11 +204,10 @@ public class ObjectParsingTest extends XvantageTester {
     public void testReadObjectWithPropertyDifferentToReturnType() throws Exception {
         Binding bind = newBinding("/o", ObjectWithPolymorph.class);
 
-        parsing.setSkipNullProperty(true);
-        Entry<Long, Object> entry = parsing.parseObject(bind,
+        parsing.setSkipNullProperty(true);        
+        ObjectWithPolymorph o = (ObjectWithPolymorph) parsing.parseObject(bind,
                 "<o><collection jc=\"ArrayList\" valueClass=\"String\">" +
                 "<value>String1</value><value jc=\"Integer\">4</value></collection></o>");
-        ObjectWithPolymorph o = (ObjectWithPolymorph) entry.getValue();
         assertEquals(ArrayList.class, o.getCollection().getClass());
         Iterator iter = o.getCollection().iterator();
         assertEquals(String.class, iter.next().getClass());

@@ -70,30 +70,17 @@ public class ObjectWriting extends ObjectStringTransformer {
             logger.warning("Overwriting writing:" + old + "(class: " + clazz + ")");
     }
 
-    public <T> void writeObject(Binding<T> binding, T oneObject, TransformerHandler transformerHandler) throws Exception {
-        Long id = dataPool.getId(oneObject);
-        if (id != null)
-            atts.addAttribute("", "", "id", "", Long.toString(id));
-
-        transformerHandler.startElement("", "", binding.getElementName(), atts);
-        atts.clear();
-        for (Entry<String, Method> tmpEntry : binding.getGetterMethods().entrySet()) {
-            if (binding.shouldIgnore(tmpEntry.getValue().getName()))
-                continue;
-
-            Object result = tmpEntry.getValue().invoke(oneObject);
-            writeObject(result, tmpEntry.getValue().getReturnType(), tmpEntry.getKey(), transformerHandler);
-        }
-
-        transformerHandler.endElement("", "", binding.getElementName());
+    /**
+     * Write an object of a mounted class
+     */
+    <T> void writePOJO(Binding<T> binding, T mountedObject,
+            TransformerHandler transformerHandler) throws Exception {
+        writeObject(binding, mountedObject, binding.getClassObject(), binding.getElementName(), transformerHandler);
     }
 
     /**
      * This method writes the specified object to the transformerHandler as property.
-     * It will only write its id if object is not a primitive nor a collection.
-     *
-     * This is different to writeObject, which writes the object with all of its properties.
-     * @see #writeObject(de.pannous.xvantage.core.Binding, java.lang.Object, javax.xml.transform.sax.TransformerHandler)
+     * It will only write its id if the object is not a primitive nor a collection.
      *
      * @param object the object to be saved
      * @param clazz is necessary to check if the object should be serialized as collections
@@ -101,21 +88,40 @@ public class ObjectWriting extends ObjectStringTransformer {
      * @param transformerHandler
      * @throws SAXException
      */
-    public void writeObject(Object object, Class clazz,
+    void writeObject(Object object, Class clazz,
+            String elementName, TransformerHandler transformerHandler) throws Exception {
+        writeObject(null, object, clazz, elementName, transformerHandler);
+    }
+
+    /**
+     * Writes mounted or unmounted object.
+     * 
+     * @param binding not null if a mounted object
+     * @param object the object to write
+     * @param clazz the class of the object
+     * @param elementName the name of the xml element for this object
+     * @param transformerHandler
+     * @throws Exception
+     */
+    public void writeObject(Binding binding, Object object, Class clazz,
             String elementName, TransformerHandler transformerHandler) throws Exception {
 
         if (object == null && skipNullProperty)
             return;
 
         atts.clear();
-
-        if (object != null) {
+        if (object != null && binding == null) {
             Class entryClass = object.getClass();
             // print arrayList if list (assignable because of 'extends') but do not add jc='Long' if 'long'
             if (!entryClass.equals(clazz) && !samePrimitive(entryClass, clazz)) {
                 atts.addAttribute("", "", javaClass, "", getAliasFromClass(entryClass));
+                clazz = entryClass;
             }
         }
+
+        Long id = dataPool.getId(object);
+        if (id != null)
+            atts.addAttribute("", "", "id", "", Long.toString(id));
 
         Writing writing = selectWriteMethodMap.get(clazz);
         if (writing != null) {
@@ -184,26 +190,39 @@ public class ObjectWriting extends ObjectStringTransformer {
                         atts.addAttribute("", "", keyClassStr, "", getAliasFromClass(firstKeyClass));
                         atts.addAttribute("", "", valueClassStr, "", getAliasFromClass(firstValueClass));
                         transformerHandler.startElement("", "", elementName, atts);
-                        atts.clear();
                     }
+                    atts.clear();
                     transformerHandler.startElement("", "", entryStr, atts);
-
                     writeObject(entry.getKey(), firstKeyClass, keyStr, transformerHandler);
                     writeObject(entry.getValue(), firstValueClass, valueStr, transformerHandler);
                     transformerHandler.endElement("", "", entryStr);
                 }
             }
-        } else {
-            Long id = dataPool.getId(object);
+        } else if (binding != null) {
+            transformerHandler.startElement("", "", binding.getElementName(), atts);
+            atts.clear();
+            for (Object obj : binding.getGetterMethods().entrySet()) {
+                Entry<String, Method> tmpEntry = (Entry<String, Method>) obj;
+                if (binding.shouldIgnore(tmpEntry.getValue().getName()))
+                    continue;
+
+                Object result = tmpEntry.getValue().invoke(object);
+                writeObject(result, tmpEntry.getValue().getReturnType(), tmpEntry.getKey(), transformerHandler);
+            }
+
+            elementName = binding.getElementName();
+        } else {           
             if (id != null) {
+                // reference to an existing object, so: write id as subnode not as attribute
+                atts.clear();
                 String str = Long.toString(id);
                 transformerHandler.startElement("", "", elementName, atts);
                 transformerHandler.characters(str.toCharArray(), 0, str.length());
             } else {
                 if (object != null) {
-                    // try to write as POJO
                     // TODO PERFORMANCE use cached bindings for unmounted classes
-                    writeObject(new Binding("/unknown/" + elementName, object.getClass()), object, transformerHandler);
+                    // try to write as POJO
+                    writePOJO(new Binding("/unknown/" + elementName, object.getClass()), object, transformerHandler);
                     return;
                 } else {
                     // skip value

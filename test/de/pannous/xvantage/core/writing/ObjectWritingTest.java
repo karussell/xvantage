@@ -1,6 +1,7 @@
 package de.pannous.xvantage.core.writing;
 
-import de.pannous.xvantage.core.*;
+import de.pannous.xvantage.core.Binding;
+import de.pannous.xvantage.core.XvantageTester;
 import de.pannous.xvantage.core.util.test.ObjectWithNestedObject;
 import de.pannous.xvantage.core.util.test.ObjectWithPolymorph;
 import de.pannous.xvantage.core.util.test.Person;
@@ -134,7 +135,7 @@ public class ObjectWritingTest extends XvantageTester {
         bind.ignoreMethod("getName");
         Map<Long, Person> objects = (Map<Long, Person>) dataPool.getData(p1.getClass());
         objects.put(p1.getId(), p1);
-        writing.writeObject(bind, p1, transformerHandler);
+        writing.writePOJO(bind, p1, transformerHandler);
         assertEquals("<person id=\"1\"><mainTask/><tasks jc=\"ArrayList\"/><id>1</id></person>", writer.toString());
     }
 
@@ -146,7 +147,7 @@ public class ObjectWritingTest extends XvantageTester {
         Map<Long, Person> objects = (Map<Long, Person>) dataPool.getData(p1.getClass());
         objects.put(p1.getId(), p1);
         writing.setSkipNullProperty(true);
-        writing.writeObject(bind, p1, transformerHandler);
+        writing.writePOJO(bind, p1, transformerHandler);
         assertEquals("<person id=\"1\"><name>p1</name><id>1</id></person>", writer.toString());
     }
 
@@ -160,7 +161,7 @@ public class ObjectWritingTest extends XvantageTester {
         Map<Long, ObjectWithNestedObject> objects = (Map<Long, ObjectWithNestedObject>) dataPool.getData(obj.getClass());
         objects.put(1L, obj);
 
-        writing.writeObject(bind, obj, transformerHandler);
+        writing.writePOJO(bind, obj, transformerHandler);
         assertEquals("<o id=\"1\"><simpleObject><name>p1</name></simpleObject><emptyObject/></o>", writer.toString());
     }
 
@@ -179,7 +180,7 @@ public class ObjectWritingTest extends XvantageTester {
         obj.getCollection().add((Integer) 4);
 
         writing.setSkipNullProperty(true);
-        writing.writeObject(bind, obj, transformerHandler);
+        writing.writePOJO(bind, obj, transformerHandler);
         String str = writer.toString();
         
         assertTrue(str.contains("<collection jc=\"ArrayList\" valueClass=\"String\"><value>String1</value><value jc=\"Integer\">4</value></collection>"));

@@ -4,7 +4,6 @@ import de.pannous.xvantage.core.Binding;
 import de.pannous.xvantage.core.DataPool;
 import de.pannous.xvantage.core.ObjectStringTransformer;
 import de.pannous.xvantage.core.util.Helper;
-import de.pannous.xvantage.core.util.MapEntry;
 import java.io.StringReader;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
@@ -18,7 +17,6 @@ import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -84,79 +82,23 @@ public class ObjectParsing extends ObjectStringTransformer {
     /**
      * @return the id and one parsed object
      */
-    public <T> Entry<Long, T> parseObject(Binding<T> binding, String value) throws Exception {
-        Document doc = builder.parse(new InputSource(new StringReader(value)));
-        Class clazz = binding.getClassObject();
-        Map<Long, T> objects = dataPool.getData(clazz);
-        Element firstElement = Helper.getFirstElement(doc.getChildNodes());
-        Long id;
+    public <T> T parseObject(Binding<T> binding, String value) {
         try {
-            id = Long.parseLong(firstElement.getAttribute("id"));
+            Document doc = builder.parse(new InputSource(new StringReader(value)));
+            Element firstElement = Helper.getFirstElement(doc.getChildNodes());
+            Object obj = parseObject(binding, binding.getClassObject(), firstElement);
+            return (T) obj;
         } catch (Exception ex) {
-            id = idCounter++;
+            throw new RuntimeException(ex);
         }
-        T obj = objects.get(id);
-
-        if (obj == null) {
-            // object was already earlier referenced (TODO how to detect duplicate ids?)
-            Constructor c = Helper.getConstructor(clazz);
-            if (c == null)
-                throw new IllegalAccessException("Cannot access constructor of " + clazz);
-
-            obj = (T) c.newInstance();
-            objects.put(id, obj);
-        }
-
-        fillWithProperties(binding, obj, firstElement.getChildNodes());
-        return new MapEntry<Long, T>(id, obj);
     }
 
-    public Object parseObjectAsProperty(Class classOfProperty, Node node) {
-        String str = ((Element) node).getAttribute(javaClass);
-        if (str != null && str.length() > 0) {
-            try {
-                classOfProperty = getClassFromAlias(str);
-            } catch (Exception ex) {
-                throw new RuntimeException(ex);
-            }
+    public Object parseObjectAsProperty(Class classOfProperty, Node mainNode) {
+        try {
+            return parseObject(null, classOfProperty, mainNode);
+        } catch (Exception ex) {
+            throw new RuntimeException(ex);
         }
-
-        Parsing parsing = getClassParsing(classOfProperty);
-        if (parsing == null) {
-            // if no collection or no primitive type was found we use a reference
-            // e.g. <mainTask>1</mainTask>             
-            try {
-                Long id = (Long) longParse.parse(node);
-                Map<Long, Object> map = dataPool.getData(classOfProperty);
-                Object obj = map.get(id);
-                if (obj == null) {
-                    try {
-                        Constructor c = Helper.getConstructor(classOfProperty);
-                        obj = c.newInstance();
-                    } catch (Exception ex) {
-                        try {
-                            obj = classOfProperty.newInstance();
-                        } catch (Exception ex2) {
-                            throw new UnsupportedOperationException("Couldn't call default constructor of " + classOfProperty + " node:" + node.getTextContent(), ex2);
-                        }
-                    }
-                    map.put(id, obj);
-                }
-                return obj;
-            } catch (NumberFormatException ex) {
-            }
-            if (node.getChildNodes().getLength() == 0)
-                return null;
-
-            try {
-                Object obj = Helper.getConstructor(classOfProperty).newInstance();
-                fillWithProperties(new Binding("/unknown/", classOfProperty), obj, node.getChildNodes());
-                return obj;
-            } catch (Exception ex) {
-                throw new UnsupportedOperationException(ex);
-            }
-        }
-        return parsing.parse(node);
     }
 
     /**
@@ -165,23 +107,87 @@ public class ObjectParsing extends ObjectStringTransformer {
      *
      * @throws Exception, NumberFormatException could occur, failure to call newInstance, ..
      */
-    private <T> void fillWithProperties(Binding<T> binding, T obj, NodeList list) throws Exception {
-        for (int ii = 0; ii < list.getLength(); ii++) {
-            Node node = list.item(ii);
-            if (node.getNodeType() != Node.ELEMENT_NODE)
-                continue;
-            Method m = binding.getSetterMethods().get(node.getNodeName());
-            if (m == null) {
-                String str = node.getParentNode() == null ? "" : node.getParentNode().getNodeName();
-                logger.info("No setter found for:" + node.getNodeName() + " (parent:" + str + ")");
-                continue;
-            }
-            if (binding.shouldIgnore(m.getName()))
-                continue;
+    Object parseObject(Binding binding, Class clazz, Node mainNode)
+            throws Exception {
 
-            Class tmpClazz = m.getParameterTypes()[0];
-            m.invoke(obj, parseObjectAsProperty(tmpClazz, node));
+        String str = ((Element) mainNode).getAttribute(javaClass);
+        if (str != null && str.length() > 0)
+            clazz = getClassFromAlias(str);
+
+        Parsing parsing = getClassParsing(clazz);
+        Object obj = null;
+        Long id = null;
+
+        if (parsing != null)
+            obj = parsing.parse(mainNode);
+
+        Map<Long, Object> objects = dataPool.getData(clazz);
+        try {
+            id = Long.parseLong(((Element) mainNode).getAttribute("id"));
+        } catch (Exception ex) {
         }
+
+        if (parsing == null) {
+            if (mainNode.getChildNodes().getLength() == 0)
+                return null;
+
+            if (binding != null) {
+                // now handle the case of a mounted class
+                if (id == null)
+                    id = idCounter++;
+
+                objects = dataPool.getData(binding.getClassObject());
+                obj = objects.get(id);
+                if (obj == null) {
+                    // object was already earlier referenced + created (TODO how to detect duplicate ids?)
+                    Constructor c = Helper.getConstructor(binding.getClassObject());
+                    if (c == null)
+                        throw new IllegalAccessException("Cannot access constructor of " + binding.getClassObject());
+
+                    obj = c.newInstance();
+                }
+                // put the referenced object directly here, otherwise references
+                // within this object won't be handled properly -> see XvantageTest.testCustomParsing
+                objects.put(id, obj);
+                NodeList list = mainNode.getChildNodes();
+                for (int ii = 0; ii < list.getLength(); ii++) {
+                    Node node = list.item(ii);
+                    if (node.getNodeType() != Node.ELEMENT_NODE)
+                        continue;
+                    Method m = (Method) binding.getSetterMethods().get(node.getNodeName());
+                    if (m == null) {
+                        String str2 = node.getParentNode() == null ? "" : node.getParentNode().getNodeName();
+                        logger.info("No setter found for:" + node.getNodeName() + " (parent:" + str2 + ")");
+                        continue;
+                    }
+                    if (binding.shouldIgnore(m.getName()))
+                        continue;
+
+                    Class tmpClazz = m.getParameterTypes()[0];
+                    m.invoke(obj, parseObjectAsProperty(tmpClazz, node));
+                }
+                return obj;
+            } else {
+                try {
+                    // if no collection or no primitive type was found we use a reference
+                    // e.g. <mainTask>1</mainTask>
+                    id = (Long) longParse.parse(mainNode.getFirstChild());
+                    obj = objects.get(id);
+                    if (obj == null) {
+                        Constructor c = Helper.getConstructor(clazz);
+                        obj = c.newInstance();
+                    }
+                } catch (Exception ex) {
+                    // TODO PERFORMANCE cache bindings of unmounted classes
+                    obj = parseObject(new Binding("/unknown/", clazz), clazz, mainNode);
+                }
+            }
+        }
+
+        if (id != null && obj != null)
+            objects.put(id, obj);
+
+        return obj;
     }
 
     private Parsing getClassParsing(Class tmpClazz) {
