@@ -2,6 +2,8 @@
 ====================================
 
 Please give your feedback to peathal@yaaahoooo.de (some a and o too much ;-))
+Or see this blog entry to comment:
+http://karussell.wordpress.com/2009/09/29/xvantage-yet-another-xml-serializer/
 
 Xvantage is yet another xml serializer and deserializer without much configuration
 hassle. It is well suited if you have java objects and want to serialize them
