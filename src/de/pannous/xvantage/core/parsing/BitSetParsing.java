@@ -13,8 +13,13 @@ public class BitSetParsing implements Parsing {
         // remove the {}
         int start = bitSetAsStr.indexOf("{");
         int end = bitSetAsStr.indexOf("}");
-        bitSetAsStr = bitSetAsStr.substring(start + 1, end);
+
+        if (start < 0 || end < 0) {
+            return null;
+        }
+
         BitSet bitSet = new BitSet();
+        bitSetAsStr = bitSetAsStr.substring(start + 1, end);        
         for (String str : bitSetAsStr.split(",")) {
             str = str.trim();
             if (str.length() > 0)

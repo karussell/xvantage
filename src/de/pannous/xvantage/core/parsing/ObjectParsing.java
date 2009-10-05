@@ -136,19 +136,26 @@ public class ObjectParsing extends ObjectStringTransformer {
                 if (id == null)
                     id = idCounter++;
 
-                objects = dataPool.getData(binding.getClassObject());
-                obj = objects.get(id);
+                if (objects != null) {
+                    obj = objects.get(id);
+                } else {
+                    logger.info("Will not put objects of class " + clazz + " into dataPool (no data found in dataPool)");
+                }
+
                 if (obj == null) {
                     // object was already earlier referenced + created (TODO how to detect duplicate ids?)
-                    Constructor c = Helper.getConstructor(binding.getClassObject());
+                    Constructor c = Helper.getConstructor(clazz);
                     if (c == null)
-                        throw new IllegalAccessException("Cannot access constructor of " + binding.getClassObject());
+                        throw new IllegalAccessException("Cannot access constructor of " + clazz);
 
                     obj = c.newInstance();
                 }
+
                 // put the referenced object directly here, otherwise references
                 // within this object won't be handled properly -> see XvantageTest.testCustomParsing
-                objects.put(id, obj);
+                if (objects != null)
+                    objects.put(id, obj);
+
                 NodeList list = mainNode.getChildNodes();
                 for (int ii = 0; ii < list.getLength(); ii++) {
                     Node node = list.item(ii);
@@ -184,7 +191,7 @@ public class ObjectParsing extends ObjectStringTransformer {
             }
         }
 
-        if (id != null && obj != null)
+        if (id != null && obj != null && objects != null)
             objects.put(id, obj);
 
         return obj;

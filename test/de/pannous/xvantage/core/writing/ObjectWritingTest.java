@@ -5,6 +5,7 @@ import de.pannous.xvantage.core.XvantageTester;
 import de.pannous.xvantage.core.util.test.ObjectWithNestedObject;
 import de.pannous.xvantage.core.util.test.ObjectWithPolymorph;
 import de.pannous.xvantage.core.util.test.Person;
+import de.pannous.xvantage.core.util.test.SimpleObj;
 import de.pannous.xvantage.core.util.test.Task;
 import java.io.StringWriter;
 import java.util.ArrayList;
@@ -136,7 +137,10 @@ public class ObjectWritingTest extends XvantageTester {
         Map<Long, Person> objects = (Map<Long, Person>) dataPool.getData(p1.getClass());
         objects.put(p1.getId(), p1);
         writing.writePOJO(bind, p1, transformerHandler);
-        assertEquals("<person id=\"1\"><mainTask/><tasks jc=\"ArrayList\"/><id>1</id></person>", writer.toString());
+
+        assertEquals("<person jc=\"de.pannous.xvantage.core.writing.ObjectWritingTest$1\" id=\"1\">" +
+                "<mainTask/><tasks jc=\"ArrayList\"/><id>1</id>" +
+                "</person>", writer.toString());
     }
 
     @Test
@@ -156,13 +160,24 @@ public class ObjectWritingTest extends XvantageTester {
         // SimpleObj -> which has no id but getters
         // EmptyObj  -> which has no id and no getters
         ObjectWithNestedObject obj = new ObjectWithNestedObject("p1");
+
+        // create subclass with another name for simpleObj
+        obj.setSimpleObject(new SimpleObj("neu") {
+        });
+
         Binding bind = newBinding("/root/o", ObjectWithNestedObject.class);
 
         Map<Long, ObjectWithNestedObject> objects = (Map<Long, ObjectWithNestedObject>) dataPool.getData(obj.getClass());
         objects.put(1L, obj);
 
         writing.writePOJO(bind, obj, transformerHandler);
-        assertEquals("<o id=\"1\"><simpleObject><name>p1</name></simpleObject><emptyObject/></o>", writer.toString());
+        assertEquals(
+                "<o id=\"1\">" +
+                "<simpleObject jc=\"de.pannous.xvantage.core.writing.ObjectWritingTest$2\">" +
+                "<name>neu</name>" +
+                "</simpleObject>" +
+                "<emptyObject/>" +
+                "</o>", writer.toString());
     }
 
     @Test
@@ -182,7 +197,7 @@ public class ObjectWritingTest extends XvantageTester {
         writing.setSkipNullProperty(true);
         writing.writePOJO(bind, obj, transformerHandler);
         String str = writer.toString();
-        
+
         assertTrue(str.contains("<collection jc=\"ArrayList\" valueClass=\"String\"><value>String1</value><value jc=\"Integer\">4</value></collection>"));
     }
 }

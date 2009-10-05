@@ -110,7 +110,7 @@ public class ObjectWriting extends ObjectStringTransformer {
             return;
 
         atts.clear();
-        if (object != null && binding == null) {
+        if (object != null) {
             Class entryClass = object.getClass();
             // print arrayList if list (assignable because of 'extends') but do not add jc='Long' if 'long'
             if (!entryClass.equals(clazz) && !samePrimitive(entryClass, clazz)) {
@@ -199,38 +199,41 @@ public class ObjectWriting extends ObjectStringTransformer {
                 }
             }
         } else if (binding != null) {
-            transformerHandler.startElement("", "", binding.getElementName(), atts);
-            atts.clear();
-            for (Object obj : binding.getGetterMethods().entrySet()) {
-                Entry<String, Method> tmpEntry = (Entry<String, Method>) obj;
-                if (binding.shouldIgnore(tmpEntry.getValue().getName()))
-                    continue;
-
-                Object result = tmpEntry.getValue().invoke(object);
-                writeObject(result, tmpEntry.getValue().getReturnType(), tmpEntry.getKey(), transformerHandler);
-            }
-
             elementName = binding.getElementName();
-        } else {           
-            if (id != null) {
-                // reference to an existing object, so: write id as subnode not as attribute
-                atts.clear();
-                String str = Long.toString(id);
-                transformerHandler.startElement("", "", elementName, atts);
-                transformerHandler.characters(str.toCharArray(), 0, str.length());
-            } else {
-                if (object != null) {
-                    // TODO PERFORMANCE use cached bindings for unmounted classes
-                    // try to write as POJO
-                    writePOJO(new Binding("/unknown/" + elementName, object.getClass()), object, transformerHandler);
-                    return;
-                } else {
-                    // skip value
-                    transformerHandler.startElement("", "", elementName, atts);
-                }
-            }
+            transformerHandler.startElement("", "", elementName, atts);            
+            writeGetterOnly(binding, object, transformerHandler);
+        } else if (id != null) {
+            // reference to an existing object, so: write id as subnode not as attribute
+            // do not put anything as attribute, because the object has to be an
+            // instance of a mounted class
+            atts.clear();            
+            transformerHandler.startElement("", "", elementName, atts);
+            String str = Long.toString(id);
+            transformerHandler.characters(str.toCharArray(), 0, str.length());
+        } else if (object == null) {
+            // empty value results in empty node
+            transformerHandler.startElement("", "", elementName, atts);
+        } else {
+            // TODO PERFORMANCE use cached bindings for unmounted classes
+            // try to write as POJO
+            transformerHandler.startElement("", "", elementName, atts);
+            writeGetterOnly(new Binding("/unknon", clazz), object, transformerHandler);
         }
+
         transformerHandler.endElement("", "", elementName);
+    }
+
+    private void writeGetterOnly(Binding binding, Object object, TransformerHandler transformerHandler)
+            throws Exception {
+        atts.clear();
+        for (Object obj : binding.getGetterMethods().entrySet()) {
+            Entry<String, Method> tmpEntry = (Entry<String, Method>) obj;
+            if (binding.shouldIgnore(tmpEntry.getValue().getName()))
+                continue;
+
+            Object result = tmpEntry.getValue().invoke(object);
+            writeObject(result, tmpEntry.getValue().getReturnType(), tmpEntry.getKey(), transformerHandler);
+        }
     }
 
     public void writeObject(Object object, Class expectedClass, Class entryClass,

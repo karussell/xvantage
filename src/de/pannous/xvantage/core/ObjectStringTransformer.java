@@ -99,6 +99,8 @@ public abstract class ObjectStringTransformer {
     }
 
     public void init(DataPool dataPool) {
+        if(dataPool == null)
+            throw new NullPointerException("DataPool cannot be null!");
         this.dataPool = dataPool;
     }
 
