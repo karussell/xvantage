@@ -339,6 +339,10 @@ public class ObjectParsing extends ObjectStringTransformer {
     public void putParsing(Class clazz, Parsing p) {
         selectParseMethodMap.put(clazz, p);
     }
+
+    public Parsing getParsing(Class clazz) {
+        return selectParseMethodMap.get(clazz);
+    }
     private static Parsing byteParse = new Parsing() {
 
         public Object parse(Node node) {

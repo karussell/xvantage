@@ -1,5 +1,5 @@
-=> publish to "sf maven" as version=0.8
-
+ * BeanInfo + PropertyDescriptor instead pure reflection?
+   Apache BeanUtils to clone beans!
  * xvantage.putParsing(WeekRasterImpl.class, new Parsing() {...})
    xvantage.putParsing(WeekRaster.class, new Parsing() {...})
    only the latter one should be necessary
