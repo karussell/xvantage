@@ -4,6 +4,7 @@ import de.pannous.xvantage.core.Binding;
 import de.pannous.xvantage.core.DataPool;
 import de.pannous.xvantage.core.ObjectStringTransformer;
 import de.pannous.xvantage.core.util.Helper;
+import java.io.File;
 import java.io.StringReader;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
@@ -333,6 +334,10 @@ public class ObjectParsing extends ObjectStringTransformer {
             put(String.class, STRING_PARSING);
 
             put(BitSet.class, BITSET_PARSING);
+
+            put(Class.class, CLASS_PARSING);
+
+            put(File.class, FILE_PARSING);
         }
     };
 
@@ -449,6 +454,8 @@ public class ObjectParsing extends ObjectStringTransformer {
             return linkedMap;
         }
     };
+    public static Parsing CLASS_PARSING = new ClassParsing();
+    public static Parsing FILE_PARSING = new FileParsing();
     public static Parsing STRING_PARSING = new StringParsing();
     public static Parsing BITSET_PARSING = new BitSetParsing();
     private Parsing linkedListParse = new LinkedListParsing(this);

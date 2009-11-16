@@ -2,6 +2,7 @@ package de.pannous.xvantage.core.writing;
 
 import de.pannous.xvantage.core.Binding;
 import de.pannous.xvantage.core.ObjectStringTransformer;
+import java.io.File;
 import java.lang.reflect.Method;
 import java.util.BitSet;
 import java.util.Collection;
@@ -27,6 +28,13 @@ public class ObjectWriting extends ObjectStringTransformer {
 
         public void toString(Object object, TransformerHandler transformerHandler) throws Exception {
             String str = object.toString();
+            transformerHandler.characters(str.toCharArray(), 0, str.length());
+        }
+    };
+    public static Writing CLASS_TO_STRING = new Writing() {
+
+        public void toString(Object object, TransformerHandler transformerHandler) throws Exception {
+            String str = ((Class) object).getName();
             transformerHandler.characters(str.toCharArray(), 0, str.length());
         }
     };
@@ -61,6 +69,10 @@ public class ObjectWriting extends ObjectStringTransformer {
             put(String.class, WRITING_TO_STRING);
 
             put(BitSet.class, WRITING_TO_STRING);
+
+            put(File.class, WRITING_TO_STRING);
+            
+            put(Class.class, CLASS_TO_STRING);
         }
     };
 
@@ -198,15 +210,17 @@ public class ObjectWriting extends ObjectStringTransformer {
                     transformerHandler.endElement("", "", entryStr);
                 }
             }
+//        } else if(Serializable.class.isAssignableFrom(clazz)) {
+//            binding.getWriteObjectMethod().invoke(object, );
         } else if (binding != null) {
             elementName = binding.getElementName();
-            transformerHandler.startElement("", "", elementName, atts);            
+            transformerHandler.startElement("", "", elementName, atts);
             writeGetterOnly(binding, object, transformerHandler);
         } else if (id != null) {
             // reference to an existing object, so: write id as subnode not as attribute
             // do not put anything as attribute, because the object has to be an
             // instance of a mounted class
-            atts.clear();            
+            atts.clear();
             transformerHandler.startElement("", "", elementName, atts);
             String str = Long.toString(id);
             transformerHandler.characters(str.toCharArray(), 0, str.length());

@@ -5,7 +5,7 @@ package de.pannous.xvantage.core.util.test;
  */
 public class SimpleObj {
 
-    private String name;
+    private String name;    
 
     private SimpleObj() {
     }

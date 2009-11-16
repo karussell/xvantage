@@ -1,3 +1,6 @@
+ * Serializable -> private void writeObject(ObjectOutputStream oos)
+                   private void readObject(ObjectInputStream oos)
+                -> see SerializableObject
  * BeanInfo + PropertyDescriptor instead pure reflection?
    Apache BeanUtils to clone beans!
  * xvantage.putParsing(WeekRasterImpl.class, new Parsing() {...})

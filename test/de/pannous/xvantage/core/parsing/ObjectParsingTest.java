@@ -9,6 +9,7 @@ import de.pannous.xvantage.core.util.test.ObjectWithPolymorph;
 import de.pannous.xvantage.core.util.test.Person;
 import de.pannous.xvantage.core.util.test.SimpleObj;
 import de.pannous.xvantage.core.util.test.Task;
+import java.io.File;
 import java.io.InputStream;
 import java.io.StringWriter;
 import java.util.ArrayList;
@@ -17,7 +18,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Transformer;
 import javax.xml.transform.sax.SAXTransformerFactory;
@@ -118,6 +118,20 @@ public class ObjectParsingTest extends XvantageTester {
     }
 
     @Test
+    public void testParseFile() throws Exception {
+        File file = (File) parsing.parseObjectAsProperty(File.class,
+                Helper.getRootFromString("<file>/test</file>"));
+        assertEquals("test", file.getName());
+    }
+
+    @Test
+    public void testParseClass() throws Exception {
+        Class clazz = (Class) parsing.parseObjectAsProperty(Class.class,
+                Helper.getRootFromString("<class>" + File.class.getName() + "</class>"));
+        assertEquals("File", clazz.getSimpleName());
+    }
+
+    @Test
     public void testDoNotParseWithoutValueclassAttribute_ButDoNotThrowAnException() throws Exception {
         List list = (List) parsing.parseObjectAsProperty(ArrayList.class,
                 Helper.getRootFromString("<enclosing><value>2</value></enclosing>"));
@@ -204,7 +218,7 @@ public class ObjectParsingTest extends XvantageTester {
     public void testReadObjectWithPropertyDifferentToReturnType() throws Exception {
         Binding bind = newBinding("/o", ObjectWithPolymorph.class);
 
-        parsing.setSkipNullProperty(true);        
+        parsing.setSkipNullProperty(true);
         ObjectWithPolymorph o = (ObjectWithPolymorph) parsing.parseObject(bind,
                 "<o><collection jc=\"ArrayList\" valueClass=\"String\">" +
                 "<value>String1</value><value jc=\"Integer\">4</value></collection></o>");

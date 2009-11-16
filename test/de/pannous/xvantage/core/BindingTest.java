@@ -1,13 +1,6 @@
 package de.pannous.xvantage.core;
 
-import de.pannous.xvantage.core.util.Helper;
-import de.pannous.xvantage.core.util.test.ObjectWithCollections;
-import de.pannous.xvantage.core.util.test.Person;
 import de.pannous.xvantage.core.util.test.SimpleObj;
-import de.pannous.xvantage.core.util.test.Task;
-import java.io.InputStream;
-import java.util.Map;
-import java.util.Map.Entry;
 import org.junit.Before;
 import org.junit.Test;
 

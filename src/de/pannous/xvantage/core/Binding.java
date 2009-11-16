@@ -1,6 +1,8 @@
 package de.pannous.xvantage.core;
 
 import de.pannous.xvantage.core.util.Helper;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -21,6 +23,8 @@ public class Binding<T> {
     private Map<String, Method> getterMethods;
     private Map<String, Method> setterMethods;
     private Set<String> ignoreMethods;
+    private Method writeObjectMethod;
+    private Method readObjectMethod;
 
     public Binding(String pathAndElement, Class<T> clazz) {
         if (clazz == null)
@@ -30,8 +34,18 @@ public class Binding<T> {
         getterMethods = new HashMap();
         setterMethods = new HashMap();
         ignoreMethods = new HashSet();
-        for (Method method : clazz.getMethods()) {
+        
+        try {
+            writeObjectMethod = clazz.getDeclaredMethod("writeObject", ObjectOutputStream.class);
+        } catch (Exception ex) {
+        }
 
+        try {
+            readObjectMethod = clazz.getDeclaredMethod("readObject", ObjectInputStream.class);
+        } catch (Exception ex) {
+        }
+
+        for (Method method : clazz.getMethods()) {
             String xmlElement = Helper.getPropertyFromJavaMethod(method.getName(), method.getReturnType() == boolean.class);
             if (xmlElement != null) {
                 method.setAccessible(true);
@@ -61,6 +75,14 @@ public class Binding<T> {
         if (elementName == null || elementName.length() == 0) {
             elementName = Helper.getJavaModifier(clazz.getSimpleName());
         }
+    }
+
+    public Method getReadObjectMethod() {
+        return readObjectMethod;
+    }
+
+    public Method getWriteObjectMethod() {
+        return writeObjectMethod;
     }
 
     public String getElementName() {

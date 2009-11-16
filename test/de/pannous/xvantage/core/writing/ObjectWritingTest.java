@@ -7,6 +7,7 @@ import de.pannous.xvantage.core.util.test.ObjectWithPolymorph;
 import de.pannous.xvantage.core.util.test.Person;
 import de.pannous.xvantage.core.util.test.SimpleObj;
 import de.pannous.xvantage.core.util.test.Task;
+import java.io.File;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.BitSet;
@@ -58,6 +59,19 @@ public class ObjectWritingTest extends XvantageTester {
 
         writing.writeObject(set, BitSet.class, "set", transformerHandler);
         assertEquals("<set>{3, 4, 7}</set>", writer.toString());
+    }
+
+    @Test
+    public void testWriteFile() throws Exception {
+        File file = new File("/test");
+        writing.writeObject(file, File.class, "file", transformerHandler);
+        assertEquals("<file>/test</file>", writer.toString());
+    }
+
+    @Test
+    public void testWriteClass() throws Exception {
+        writing.writeObject(File.class, Class.class, "class", transformerHandler);
+        assertEquals("<class>" + File.class.getName() + "</class>", writer.toString());
     }
 
     @Test
