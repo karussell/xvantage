@@ -4,7 +4,6 @@ import de.pannous.xvantage.core.Binding;
 import de.pannous.xvantage.core.BindingLeaf;
 import de.pannous.xvantage.core.BindingTree;
 import de.pannous.xvantage.core.DataPool;
-import de.pannous.xvantage.core.ObjectStringTransformer;
 import de.pannous.xvantage.core.parsing.ObjectParsing;
 import org.xml.sax.Attributes;
 import org.xml.sax.helpers.DefaultHandler;

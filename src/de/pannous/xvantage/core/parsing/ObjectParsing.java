@@ -33,6 +33,12 @@ import org.xml.sax.InputSource;
  */
 public class ObjectParsing extends ObjectStringTransformer {
 
+    public static Parsing CLASS_PARSING = new ClassParsing();
+    public static Parsing FILE_PARSING = new FileParsing();
+    public static Parsing STRING_PARSING = new StringParsing();
+    public static Parsing BITSET_PARSING = new BitSetParsing();
+    private Parsing linkedListParse = new LinkedListParsing(this);
+    private ArrayParsing arrayParse = new ArrayParsing(this);
     private Class<? extends Map> defaultMapImpl = HashMap.class;
     private Class<? extends Set> defaultSetImpl = HashSet.class;
     private Class<? extends List> defaultListImpl = ArrayList.class;
@@ -85,7 +91,14 @@ public class ObjectParsing extends ObjectStringTransformer {
      */
     public <T> T parseObject(Binding<T> binding, String value) {
         try {
-            Document doc = builder.parse(new InputSource(new StringReader(value)));
+            return parseObject(binding, builder.parse(new InputSource(new StringReader(value))));
+        } catch (Exception ex) {
+            throw new RuntimeException(ex);
+        }
+    }
+
+    public <T> T parseObject(Binding<T> binding, Document doc) {
+        try {
             Element firstElement = Helper.getFirstElement(doc.getChildNodes());
             Object obj = parseObject(binding, binding.getClassObject(), firstElement);
             return (T) obj;
@@ -108,8 +121,7 @@ public class ObjectParsing extends ObjectStringTransformer {
      *
      * @throws Exception, NumberFormatException could occur, failure to call newInstance, ..
      */
-    Object parseObject(Binding binding, Class clazz, Node mainNode)
-            throws Exception {
+    public Object parseObject(Binding binding, Class clazz, Node mainNode) throws Exception {
 
         String str = ((Element) mainNode).getAttribute(javaClass);
         if (str != null && str.length() > 0)
@@ -454,10 +466,4 @@ public class ObjectParsing extends ObjectStringTransformer {
             return linkedMap;
         }
     };
-    public static Parsing CLASS_PARSING = new ClassParsing();
-    public static Parsing FILE_PARSING = new FileParsing();
-    public static Parsing STRING_PARSING = new StringParsing();
-    public static Parsing BITSET_PARSING = new BitSetParsing();
-    private Parsing linkedListParse = new LinkedListParsing(this);
-    private ArrayParsing arrayParse = new ArrayParsing(this);
 }

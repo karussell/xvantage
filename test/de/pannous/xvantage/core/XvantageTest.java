@@ -67,6 +67,16 @@ public class XvantageTest extends XvantageTester {
     }
 
     @Test
+    public void testReadTwoObjectsEscaped() {
+        InputStream iStream = getClass().getResourceAsStream("readTwoObjectsEscaped.xml");
+        xvantage.mount("/path/", SimpleObj.class);
+        DataPool pool = xvantage.readObjects(iStream);
+        assertEquals(2, pool.getData(SimpleObj.class).size());
+        assertEquals("bay<reuth", pool.getData(SimpleObj.class).get(1L).getName());
+        assertEquals("Tester&1", pool.getData(SimpleObj.class).get(0L).getName());
+    }
+
+    @Test
     public void testReadMoreComplexObjects() {
         InputStream iStream = getClass().getResourceAsStream("readMoreComplexObjects.xml");
         xvantage.mount("/path/", ComplexObject.class);

@@ -4,7 +4,7 @@
 package de.pannous.xvantage.core;
 
 import de.pannous.xvantage.core.impl.DefaultDataPool;
-import de.pannous.xvantage.core.impl.XHandler;
+import de.pannous.xvantage.core.impl.XDOMHandler;
 import de.pannous.xvantage.core.parsing.ObjectParsing;
 import de.pannous.xvantage.core.parsing.Parsing;
 import de.pannous.xvantage.core.util.Helper;
@@ -68,7 +68,8 @@ public class Xvantage {
             objWriting.init(dataPool);
             objParsing.init(dataPool);
 
-            XHandler handler = new XHandler(objParsing, bindingTree);
+//            XHandler handler = new XHandler(objParsing, bindingTree);
+            XDOMHandler handler = new XDOMHandler(objParsing, bindingTree);
             XMLReader xr = XMLReaderFactory.createXMLReader();
             xr.setContentHandler(handler);
             InputSource iSource = new InputSource(reader);

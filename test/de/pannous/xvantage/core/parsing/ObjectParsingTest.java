@@ -73,6 +73,8 @@ public class ObjectParsingTest extends XvantageTester {
         assertTrue('c' == parsing.parseObjectAsProperty(char.class, Helper.getRootFromString("<t>c</t>")));
         assertEquals("", parsing.parseObjectAsProperty(char.class, Helper.getRootFromString("<t></t>")));
         assertEquals("", parsing.parseObjectAsProperty(char.class, Helper.getRootFromString("<t/>")));
+
+        assertEquals("bay<reuth", parsing.parseObjectAsProperty(String.class, Helper.getRootFromString("<t>bay&lt;reuth</t>")));
     }
 
     @Test
@@ -158,6 +160,16 @@ public class ObjectParsingTest extends XvantageTester {
 
         assertEquals(1, owc.getStringCollection().size());
         assertEquals("str2", owc.getStringCollection().iterator().next());
+    }
+
+    @Test
+    public void testParseObjectWithCollectionWithEscapedChars() throws Exception {
+        InputStream iStream = getClass().getResourceAsStream("bindingTestParseObjectWithCollection2.xml");
+        Binding<ObjectWithCollections> bind = newBinding("/obj", ObjectWithCollections.class);
+        String str = Helper.getAsString(iStream, 1024);
+        ObjectWithCollections owc = parsing.parseObject(bind, str);
+        assertEquals(3, owc.getStringMap().size());
+        assertEquals("bay<reuth", owc.getStringMap().get(3));
     }
 
     @Test
