@@ -2,6 +2,7 @@ package de.pannous.xvantage.core.writing;
 
 import de.pannous.xvantage.core.Binding;
 import de.pannous.xvantage.core.XvantageTester;
+import de.pannous.xvantage.core.util.Helper;
 import de.pannous.xvantage.core.util.test.ObjectWithNestedObject;
 import de.pannous.xvantage.core.util.test.ObjectWithPolymorph;
 import de.pannous.xvantage.core.util.test.Person;
@@ -152,9 +153,12 @@ public class ObjectWritingTest extends XvantageTester {
         objects.put(p1.getId(), p1);
         writing.writePOJO(bind, p1, transformerHandler);
 
-        assertEquals("<person jc=\"de.pannous.xvantage.core.writing.ObjectWritingTest$1\" id=\"1\">" +
-                "<mainTask/><tasks jc=\"ArrayList\"/><id>1</id>" +
-                "</person>", writer.toString());
+        String str = writer.toString();
+        assertEquals(1, Helper.countPattern(str, "<person jc=\"de.pannous.xvantage.core.writing.ObjectWritingTest$1\" id=\"1\">"));
+        assertEquals(1, Helper.countPattern(str, "</person>"));
+        assertEquals(1, Helper.countPattern(str, "<mainTask/>"));
+        assertEquals(1, Helper.countPattern(str, "<tasks jc=\"ArrayList\"/>"));
+        assertEquals(1, Helper.countPattern(str, "<id>1</id>"));
     }
 
     @Test
@@ -166,7 +170,11 @@ public class ObjectWritingTest extends XvantageTester {
         objects.put(p1.getId(), p1);
         writing.setSkipNullProperty(true);
         writing.writePOJO(bind, p1, transformerHandler);
-        assertEquals("<person id=\"1\"><name>p1</name><id>1</id></person>", writer.toString());
+        String str = writer.toString();
+        assertEquals(1, Helper.countPattern(str, "<person id=\"1\">"));
+        assertEquals(1, Helper.countPattern(str, "</person>"));
+        assertEquals(1, Helper.countPattern(str, "<name>p1</name>"));
+        assertEquals(1, Helper.countPattern(str, "<id>1</id>"));
     }
 
     @Test
